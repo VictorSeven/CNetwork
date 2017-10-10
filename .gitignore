@@ -1,4 +1,4 @@
 #No executables
-.a
-.exe
-.o
+*.a
+*.exe
+*.o
