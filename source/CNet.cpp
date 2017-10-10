@@ -12,6 +12,15 @@
 #define IN 0
 #define OUT 1
 
+/* ==========================================================================
+
+Victor Buendía CNetwork Class
+
+This software is Open Source and redistributed with a MIT LICENSE (Read LICENSE file for more details).
+Please follow license terms when using this code.
+
+=================================================================================== */
+
 using namespace std;
 
 
@@ -1441,7 +1450,7 @@ void CNetwork<T>::matrixDotVector(vector< vector<double> > a, vector<double> v, 
 	return;
 }
 
-//Calcula el autovalor de un vector segÃºn la fÃ³rmula de Rayleigh y la devuelve
+//Calcula el autovalor de un vector según la fórmula de Rayleigh y la devuelve
 template <class T>
 double CNetwork<T>::calculateLambda(vector< vector<double> > a, vector<double> v, int n)
 {
