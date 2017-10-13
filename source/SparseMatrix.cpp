@@ -1,6 +1,7 @@
 #include<vector>
 #include<iostream>
 #include<algorithm>
+#include<random>
 #include<vector>
 #include<cmath>
 
@@ -198,10 +199,14 @@ SparseMatrix<double> SparseMatrix<T>::pow(int n)
 
 }
 
+//Note: it return a vector double where the last element is the eigenvalue
 template<class T>
 vector<double> SparseMatrix<T>::dom_eigen(double epsilon)
 {
-    int i;
+    int i,j;
+
+    double scp1, scp2; //Auxiliary variables to do scalar products fast
+
 
     //Init random initializers to get random vector
     random_device rnd_device;
@@ -209,7 +214,7 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon)
     uniform_real_distribution<double> ran_u(0.0, 1.0);
 
     vector<double> b = vector<double>(m_dim);
-    ector<double> bm = vector<double>(m_dim);
+    vector<double> bm = vector<double>(m_dim);
     double eigen, old_eigen;
 
     //Make the vector completely random
@@ -220,17 +225,35 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon)
         i++;
     }
 
+
     normalize_vector(b);
 
     //Very different values to avoid not-entering in loop
     eigen = 0.0;
     old_eigen = 1000.0;
-    while (abs(eigen-old_eigen) > epsilon)
+    i = 0;
+    while (abs(eigen-old_eigen) > epsilon && i < EIGEN_MAX_ITS)
     {
         bm = *(this) * b;
+
+        old_eigen = eigen; //Update value
+        j = 0;
+        //Compute eigenvalue using Rayleigh's quotient.
+        //Both scalar products are evaluated at the same time in order to be fast
+        scp1 = scp2 = 0.0;
+        while (j < b.size())
+        {
+            scp1 += b[j] * bm[j];
+            scp2 += b[j] * b[j];
+            j++;
+        }
+        eigen = scp1 / scp2; //Get new eigenvalue
+
         normalize_vector(bm);
-        old_eigen = eigen;
-        eigen = scalar_product(b, bm);
+
+        b = bm;
+
+        i++;
     }
 
     bm.push_back(eigen);
@@ -239,7 +262,7 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon)
 }
 
 template<class T>
-void SparseMatrix::normalize_vector(vector<double> &v)
+void SparseMatrix<T>::normalize_vector(vector<double> &v)
 {
     int i;
     double sq = 0.0;
@@ -261,8 +284,8 @@ void SparseMatrix::normalize_vector(vector<double> &v)
     return;
 }
 
-
-double scalar_product(vector<double> &u, vector<double> &v)
+template<class T>
+double SparseMatrix<T>::scalar_product(vector<double> &u, vector<double> &v)
 {
     int i;
     double p = 0.0;

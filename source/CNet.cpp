@@ -1430,10 +1430,11 @@ void CNetwork<T>::matrixDotVector(vector< vector<double> > a, vector<double> v, 
 	int i,j;
 	double sum;
 
-	for (i=0; i < n; i++)
+	//NOTE: eliminated without check
+	/*for (i=0; i < n; i++)
 	{
 		r[i] = v[i];
-	}
+	}*/
 
 	sum = 0.0;
 	for (i=0; i < n; i++)
