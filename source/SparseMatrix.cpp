@@ -26,15 +26,20 @@ public:
     SparseMatrix(int type, int msize);
 
     void push_back(data<T> d); //Adds an element
+    void erase(int index);
 
-    vector<double> dom_eigen(double epsilon);
 
 
     //Multiplication by vectors or matrices
     vector<double> operator *(vector<double> &v);
     SparseMatrix<double> operator *(SparseMatrix<T> &s);
+    data<T> operator [](int index);
+
     //Matrix exponentiation
     SparseMatrix<double> pow(int n);
+    //Compute eigenvector
+    vector<double> dom_eigen(double epsilon);
+
 
     //Modify private variable msize
     void set_size(int msize);
@@ -86,6 +91,12 @@ template<class T>
 void SparseMatrix<T>::push_back(data<T> d)
 {
     m.push_back(d);
+}
+
+template<class T>
+void SparseMatrix<T>::erase(int index)
+{
+    m.erase(m.begin() + index);
 }
 
 template<class T>
@@ -177,6 +188,12 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
 }
 
 template<class T>
+data<T> SparseMatrix<T>::operator [](int index)
+{
+    return m[index];
+}
+
+template<class T>
 SparseMatrix<double> SparseMatrix<T>::pow(int n)
 {
     if (n == 2)
@@ -217,16 +234,14 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon)
     vector<double> bm = vector<double>(m_dim);
     double eigen, old_eigen;
 
-    //Make the vector completely random
+    //Make the vector completely random to avoid being orthogonal to eigenvector
     i = 0;
     while (i < m_dim)
     {
         b[i] = ran_u(gen);
         i++;
     }
-
-
-    normalize_vector(b);
+    normalize_vector(b); //Normalize the stuff
 
     //Very different values to avoid not-entering in loop
     eigen = 0.0;
@@ -249,14 +264,14 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon)
         }
         eigen = scp1 / scp2; //Get new eigenvalue
 
-        normalize_vector(bm);
+        normalize_vector(bm); //Normalize this stuff
 
-        b = bm;
+        b = bm; //Update
 
         i++;
     }
 
-    bm.push_back(eigen);
+    bm.push_back(eigen); //Add the eigenvalue as the last element of the vector
 
     return bm;
 }
@@ -267,14 +282,16 @@ void SparseMatrix<T>::normalize_vector(vector<double> &v)
     int i;
     double sq = 0.0;
 
+    //Compute sum of squares
     i = 0;
     while(i < v.size())
     {
         sq += v[i]*v[i];
         i++;
     }
-    sq = 1.0/sqrt(sq);
+    sq = 1.0/sqrt(sq); //Inverse square root directly for speed
 
+    //Then apply it
     i = 0;
     while(i < v.size())
     {
@@ -284,6 +301,7 @@ void SparseMatrix<T>::normalize_vector(vector<double> &v)
     return;
 }
 
+//Computes scalar product between two vectors
 template<class T>
 double SparseMatrix<T>::scalar_product(vector<double> &u, vector<double> &v)
 {

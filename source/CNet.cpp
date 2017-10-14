@@ -8,11 +8,13 @@
 #include<sstream>
 #include<map>
 
+#include "SparseMatrix.cpp"
+
 #define MAX_SIZE 1000000
 #define IN 0
 #define OUT 1
 
-/* ==========================================================================
+/* ==================================================================================
 
 Victor Buendía CNetwork Class
 
@@ -23,9 +25,11 @@ Please follow license terms when using this code.
 
 using namespace std;
 
+/// ======================================================================================== ///
+/// ==================================== Class definition ================================== ///
+/// ======================================================================================== ///
 
-/// ==================================== Class definition ==================================
-template <class T = bool>
+template <class T = bool, typename B = bool>
 class CNetwork
 {
     public:
@@ -33,16 +37,14 @@ class CNetwork
         void add_nodes(int n);
         bool remove_node(int index);
         void add_link(int from, int to);
-        void add_link(int from, int to, double w);
+        void add_link(int from, int to, B w);
         bool remove_link(int from, int to);
         void create_adjacency_matrix();
-
-
 
         double mean_degree();
         double clustering_coef(int node_index);
         double mean_clustering_coef();
-        void bread_first_search(int node, vector<int> &node_indices, vector<int> &dist);
+        void breadth_first_search(int node, vector<int> &node_indices, vector<int> &dist);
         int component_size(vector<int> &node_in_this_component, vector<int> &size_of_components);
         vector<int> degree_distribution();
         vector<double> degree_correlation(vector<int> &distribution);
@@ -55,14 +57,13 @@ class CNetwork
 
         int degree(int node_index);
         vector<int> get_link(int link_index);
-        double get_weight(int link_index);
+        B get_weight(int link_index);
         int get_link_index(int from, int to);
         int get_node_count();
         int get_link_count();
         vector<unsigned int> get_neighs(int node_index);
-        int get_num_neighs(int node_index);
         int get_neigh_at(int node_index, int k);
-        int get_a(int i, int j);
+        //int get_a(int i, int j);
 
         void define_property(string name, string type, bool is_for_nodes);
         void set_value(string name, int index, double value);
@@ -82,22 +83,22 @@ class CNetwork
         void set_value(int index, T val);
         T get_value(int index);
 
-        CNetwork(int max_size, bool weight);
+        CNetwork(int max_size);
 
     private:
-        void clear_network(int max_size, bool weight);
-
-        bool weighted_net;
+        void clear_network(int max_size);
 
         int max_net_size;
         int current_size;
         int link_count;
-        vector<unsigned int> links;
-        vector<double> weight;
+        //vector<unsigned int> links;
+        SparseMatrix<B> adjm;
+
+        //vector<double> weight;
 
         vector< vector<unsigned int> > neighs;
-        vector< vector<bool> > a;
-        vector< vector<double> > a_w;
+        //vector< vector<bool> > a;
+        //vector< vector<double> > a_w;
 
         vector<T> value;
 
@@ -107,46 +108,45 @@ class CNetwork
         map<string, vector<bool> > prop_b;
         map<string, vector<string> > prop_s;
 
-        double modularity;
 
-        void matrixDotVector(vector< vector<double> >a, vector<double> v, vector<double>& r,  int n);
-        double calculateLambda(vector< vector<double> > a, vector<double> v, int n);
-        double vectorNorm(vector<double>& v, int n);
-        double largest_eigenvalue(vector< vector<double> > matrix, vector<double>& v, int n, double approx_error, int max_it);
-
-
+        //void matrixDotVector(vector< vector<double> >a, vector<double> v, vector<double>& r,  int n);
+        //double calculateLambda(vector< vector<double> > a, vector<double> v, int n);
+        //double vectorNorm(vector<double>& v, int n);
+        //double largest_eigenvalue(vector< vector<double> > matrix, vector<double>& v, int n, double approx_error, int max_it);
 
 };
-/// ========================================================================================
 
-/// ==================================== Constructor =======================================
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+
+
+/// ======================================================================================== ///
+/// ======================================== Constructor =================================== ///
+/// ======================================================================================== ///
 
 ///Create a newtork with a maximum size max_size
-template <class T>
-CNetwork<T>::CNetwork(int max_size, bool weight)
+template <class T, typename B>
+CNetwork<T,B>::CNetwork(int max_size)
 {
-    clear_network(max_size, weight);
+    clear_network(max_size);
     return;
 }
 
-template <class T>
-void CNetwork<T>::clear_network(int max_size, bool wght)
+template <class T, typename B>
+void CNetwork<T,B>::clear_network(int max_size)
 {
-    weighted_net = wght; //Assign if we want a weighted network or not
-
     current_size = 0; //Init size to 0
     max_net_size = max_size; //Set the max size of the network
     link_count = 0; //Init link count
     //Create vectors in order to add things
-    links = vector<unsigned int>();
-    weight = vector<double>();
+    adjm = SparseMatrix<B>(0);
+    //links = vector<unsigned int>();
+    //weight = vector<double>();
     neighs = vector< vector<unsigned int> >(0, vector<unsigned int>(0));
 
-    a = vector< vector<bool> >();
-    a_w = vector< vector<double> >();
-    //s = vector<int>();
-    //labels = vector<string>();
-
+    //a = vector< vector<bool> >();
+    //a_w = vector< vector<double> >();
 
     prop_d = map<string, vector<double> >();
     prop_i = map<string, vector<int> >();
@@ -161,32 +161,36 @@ void CNetwork<T>::clear_network(int max_size, bool wght)
 
 
 
-/// ========================================================================================
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+/// ======================================================================================== ///
 
+/// ======================================================================================== ///
+/// ================================= Add info functions =================================== ///
+/// ======================================================================================== ///
 
-
-/// ================================= Add info functions ===================================
 
 ///Add n nodes to the network
-template <class T>
-void CNetwork<T>::add_nodes(int n)
+template <class T, typename B>
+void CNetwork<T,B>::add_nodes(int n)
 {
-    int next_size = current_size + n; //New size of the network
+    int old_size = current_size; //Store old size
+    int next_size = old_size + n; //New size of the network
 
     //Set the size to the maximum if it exceeds it
     current_size = next_size > max_net_size ? max_net_size : next_size;
 
-    value.resize(value.size()+n); //Increase the number of value.size without adding any element to it
+    value.resize(current_size); //Increase the number of value.size without adding any element to it
 
-    for (int i = 0; i < n; i++)
+    for (int i = old_size; i < current_size; i++)
     {
         neighs.push_back(vector<unsigned int>()); //Add a new container for neighbours
     }
     return;
 }
 
-template <class T>
-bool CNetwork<T>::remove_node(int index)
+template <class T, typename B>
+bool CNetwork<T,B>::remove_node(int index)
 {
     int i,j,k;
 
@@ -199,7 +203,7 @@ bool CNetwork<T>::remove_node(int index)
         //the entry of the removed node as neighbour of others
         for (i=0; i < neighs.size(); i++)
         {
-            for (j=0; j < get_num_neighs(i); j++)
+            for (j=0; j < degree(i); j++)
             {
                 k = get_neigh_at(i,j);
                 if (k == index) //If it is the one, I want to erase, remove
@@ -217,36 +221,35 @@ bool CNetwork<T>::remove_node(int index)
 
         for (i=0; i < link_count; i++)
         {
-            //Separe cases 2*i and 2*i+1 in order to correctly reduce degree
-            if (links[2*i] == index)
+            //Separe cases from-to in order to correctly reduce degree
+            if (adjm[i].x == index || adjm[i].y == index)
             {
                 //Our node is detected, erase the entry to that node
                 who_to_erase.push_back(i);
             }
-            if (links[2*i+1] == index)
-            {
-                who_to_erase.push_back(i);
-            }
 
             //Also reduce index of nodes higher than our
-            if (links[2*i] > index)
+            if (adjm[i].x > index)
             {
-                links[2*i] -= 1;
+                //links[2*i] -= 1;
+                adjm[i].x -= 1;
             }
-            if (links[2*i+1] > index)
+            if (adjm[i].y > index)
             {
-                links[2*i+1] -= 1;
+                //links[2*i+1] -= 1;
+                adjm[i].y -= 1;
             }
         }
 
         //Perform the erase process
         for (i=0; i < who_to_erase.size(); i++)
         {
+            adjm.erase(who_to_erase[i]); //Delete all links
             //Index was recorded before, we do 2*who in order to get as even-odd again
-            links.erase(links.begin() + 2*who_to_erase[i] - 2*i); //-2*i to take in account how list moves
-            links.erase(links.begin() + 2*who_to_erase[i] - 2*i);  //This will eliminate the 2*i+1 since list moved to left
+            //links.erase(links.begin() + 2*who_to_erase[i] - 2*i); //-2*i to take in account how list moves
+            //links.erase(links.begin() + 2*who_to_erase[i] - 2*i);  //This will eliminate the 2*i+1 since list moved to left
             //This uses directly the index
-            weight.erase(weight.begin() + who_to_erase[i] - i);
+            //weight.erase(weight.begin() + who_to_erase[i] - i);
         }
 
         link_count -= who_to_erase.size() / 2; //Reduce the number of links
@@ -258,33 +261,27 @@ bool CNetwork<T>::remove_node(int index)
     else return false;
 }
 
-template <class T>
-void CNetwork<T>::add_link(int from, int to)
+///Create a link between nodes from and to and weight w
+template <class T, typename B>
+void CNetwork<T,B>::add_link(int from, int to)
 {
-    //if (from == 147 and to == 208) cout << "yet" << endl;
-    links.push_back(from); //Even to origin,
-    links.push_back(to); //Odd to destiny
-    //if (from == 147 and to == 208) cout << "yet" << endl;
-    weight.push_back(1.0); //Unit weight
-    //if (from == 147 and to == 208) cout << "yet" << endl;
+    adjm.push_back(data<bool>(from, to, true)); //Assume this method is for bools
+
+    //links.push_back(from); //Even to origin,
+    //links.push_back(to); //Odd to destiny
+    //weight.push_back(1.0); //Unit weight
     neighs[from].push_back(to); //Add the node to the neighbours
     neighs[to].push_back(from); //And do it in the other sense also
-    //if (from == 147 and to == 208) cout << "yet" << endl;
     link_count += 1; //Create one link more
-    //if (from == 147 and to == 208) cout << "yet" << endl;
-    //Increase the degree of the nodes
-    //degree[from] += 1;
-    //degree[to] += 1;
-
     return;
 }
 
 ///Create a link between nodes from and to and weight w
-template <class T>
-void CNetwork<T>::add_link(int from, int to, double w)
+template <class T, typename B>
+void CNetwork<T,B>::add_link(int from, int to, B w)
 {
 
-    int i = 0;
+    /*int i = 0;
     bool existe = false;
     int rep_index;
 
@@ -297,35 +294,34 @@ void CNetwork<T>::add_link(int from, int to, double w)
             existe = true;
         }
         i+=1;
-    }
+    }*/
 
-    if (!existe)
-    {
-        links.push_back(from); //Even to origin,
-        links.push_back(to); //Odd to destiny
+    //if (!existe)
+    //{
 
-        ///TODO maybe change
-        weight.push_back(w); //Unit weight
+    adjm.push_back(data<B>(from, to, w)); //Assume this method is for weighted things
 
-        neighs[from].push_back(to); //Add the node to the neighbours
-        neighs[to].push_back(from); //And do it in the other sense also
+    //links.push_back(from); //Even to origin,
+    //links.push_back(to); //Odd to destiny
+    //weight.push_back(w); //Unit weight
 
-        link_count += 1; //Create one link more
+    neighs[from].push_back(to); //Add the node to the neighbours
+    neighs[to].push_back(from); //And do it in the other sense also
 
-        //Increase the degree of the nodes
-        //degree[from] += 1;
-        //degree[to] += 1;
-    }
-    else
+    link_count += 1; //Create one link more
+
+
+    //}
+    /*else
     {
         weight[rep_index] += w;
-    }
+    }*/
     return;
 }
 
 ///Remove a link between from and to
-template <class T>
-bool CNetwork<T>::remove_link(int from, int to)
+template <class T, typename B>
+bool CNetwork<T,B>::remove_link(int from, int to)
 {
     //Reduce the degree of the nodes
     auto index_it = find(neighs[from].begin(), neighs[from].end(), to); //Relative index of TO in terms of FROM
@@ -341,13 +337,14 @@ bool CNetwork<T>::remove_link(int from, int to)
         //int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
         int index_link = get_link_index(from, to);
 
-        weight.erase(weight.begin() + index_link); //Erase this link weight
+        adjm.erase(index_link);
+
+        //weight.erase(weight.begin() + index_link); //Erase this link weight
+        //links.erase(links.begin()+2*index_link);
+        //links.erase(links.begin()+2*index_link);//Use this last index obtained to erase from link array
+
         link_count -= 1;
 
-        //if (from == 173 and to == 174) cout << link_count << " " << weight.size() << endl;
-
-        links.erase(links.begin()+2*index_link);
-        links.erase(links.begin()+2*index_link);//Use this last index obtained to erase from link array
 
         neighs[from].erase(neighs[from].begin()+index_neigh); //Erase the node it pointed in the neighbours list
 
@@ -365,10 +362,10 @@ bool CNetwork<T>::remove_link(int from, int to)
 
 }
 
-
+/*
 ///Writes the adjacency matrix
-template <class T>
-void CNetwork<T>::create_adjacency_matrix()
+template <class T, typename B>
+void CNetwork<T,B>::create_adjacency_matrix()
 {
     int i,j;
     int aux;
@@ -401,16 +398,19 @@ void CNetwork<T>::create_adjacency_matrix()
     }
 
     return;
-}
+}*/
 
-/// ========================================================================================
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+/// ======================================================================================== ///
 
-
-/// ================================= Topology functions ===================================
+/// ======================================================================================== ///
+/// ================================= Topology functions =================================== ///
+/// ======================================================================================== ///
 
 ///Compute the mean degree of the network and returns it
-template <class T>
-double CNetwork<T>::mean_degree()
+template <class T, typename B>
+double CNetwork<T,B>::mean_degree()
 {
     int i;
     double sum = 0.0; //Get the sum,
@@ -425,8 +425,8 @@ double CNetwork<T>::mean_degree()
 }
 
 ///Computes the clustering coefficient of a particular node
-template <class T>
-double CNetwork<T>::clustering_coef(int node_index)
+template <class T, typename B>
+double CNetwork<T,B>::clustering_coef(int node_index)
 {
     int i,j;
     int counter; //Count of pairs
@@ -461,8 +461,8 @@ double CNetwork<T>::clustering_coef(int node_index)
 }
 
 ///Computes the average clustering coefficient of the network
-template <class T>
-double CNetwork<T>::mean_clustering_coef()
+template <class T, typename B>
+double CNetwork<T,B>::mean_clustering_coef()
 {
     int i;
     double sum = 0.0; //Get the sum,
@@ -478,8 +478,8 @@ double CNetwork<T>::mean_clustering_coef()
 
 
 ///Compute all the pathlenghts from node using the optimized version from Newman's book
-template <class T>
-void CNetwork<T>::bread_first_search(int node, vector<int> &node_indices, vector<int> &dist)
+template <class T, typename B>
+void CNetwork<T,B>::breadth_first_search(int node, vector<int> &node_indices, vector<int> &dist)
 {
     int w, r; //Write and read pointers;
     int d; //Current distance
@@ -506,7 +506,7 @@ void CNetwork<T>::bread_first_search(int node, vector<int> &node_indices, vector
         cur_node = node_indices[r]; //The node we want to evaluate now
         r += 1; //We will want to take the next
         d = dist[cur_node]; //Get the distance this node is at,
-        for (j=0; j < get_num_neighs(cur_node); j++)
+        for (j=0; j < degree(cur_node); j++)
         {
             neigh = get_neigh_at(cur_node, j); //Get the neighbour
             if (dist[neigh] == -1) //If distance is unknown,
@@ -522,8 +522,8 @@ void CNetwork<T>::bread_first_search(int node, vector<int> &node_indices, vector
 }
 
 ///Use the breadth first search to get size of bigger component of the network
-template <class T>
-int CNetwork<T>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components)
+template <class T, typename B>
+int CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components)
 {
     int i,j,k;
 
@@ -546,7 +546,7 @@ int CNetwork<T>::component_size(vector<int> &node_in_this_component, vector<int>
             //cout << i << endl;
             remaining -= 1; //We have one less to see
             visited[i] = true; //Mark it
-            bread_first_search(i, node_list, dist); //Compute paths from i to all other nodes and store them
+            breadth_first_search(i, node_list, dist); //Compute paths from i to all other nodes and store them
 
             size_of_components.push_back(0); //Size is equal to zero when we start
             node_in_this_component.push_back(i); //The node we are now visiting is in this component - store it
@@ -582,8 +582,8 @@ int CNetwork<T>::component_size(vector<int> &node_in_this_component, vector<int>
 }
 
 ///Computes the average path lenght of the network
-template <class T>
-double CNetwork<T>::average_pathlenght()
+template <class T, typename B>
+double CNetwork<T,B>::average_pathlenght()
 {
     int i,j,k; //Counters
     //double sum;
@@ -607,7 +607,7 @@ double CNetwork<T>::average_pathlenght()
             //cout << i << endl;
             remaining -= 1; //We have one less to see
             visited[i] = true; //Mark it
-            bread_first_search(i, node_list, dist); //Compute paths from i to all other nodes and store them
+            breadth_first_search(i, node_list, dist); //Compute paths from i to all other nodes and store them
 
             //See which nodes are reachable from i
             for (j=0; j < current_size; j++)
@@ -627,7 +627,7 @@ double CNetwork<T>::average_pathlenght()
                 //If we have not visited it yet (to avoid counting first node found twice)
                 if (!visited[node])
                 {
-                    bread_first_search(node, node_list, dist); //Compute paths from i to all other nodes and store them
+                    breadth_first_search(node, node_list, dist); //Compute paths from i to all other nodes and store them
                     visited[node] = true; //Mark as visited now
                     remaining -= 1; //Eliminate from remaining list
                     //We know beforehand which nodes we have to sum, because this are the reachable ones.
@@ -663,8 +663,9 @@ double CNetwork<T>::average_pathlenght()
     return maxpathlenght; //Return path lenght of largest component.
 }
 
-template <class T>
-vector<int> CNetwork<T>::degree_distribution()
+///TODO marked for revision
+template <class T, typename B>
+vector<int> CNetwork<T,B>::degree_distribution()
 {
     int i;
     vector<int> result(current_size, 0);
@@ -685,8 +686,8 @@ vector<int> CNetwork<T>::degree_distribution()
 }
 
 ///Compute the degree correlation (also return degree distribution)
-template <class T>
-vector<double> CNetwork<T>::degree_correlation(vector<int> &distribution)
+template <class T, typename B>
+vector<double> CNetwork<T,B>::degree_correlation(vector<int> &distribution)
 {
     int i,j,k;
     int index, numneighs;
@@ -734,13 +735,17 @@ vector<double> CNetwork<T>::degree_correlation(vector<int> &distribution)
     return result;
 }
 
-/// ========================================================================================
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+/// ======================================================================================== ///
 
 
-/// =================================== Network creation ===================================
+/// ======================================================================================== ///
+/// =================================== Network creation =================================== ///
+/// ======================================================================================== ///
 
-template <class T>
-void CNetwork<T>::create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed)
+template <class T, typename B>
+void CNetwork<T,B>::create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed)
 {
     int i,j,k;
     double p = mean_k / (nodes - 1.0);
@@ -767,8 +772,8 @@ void CNetwork<T>::create_erdos_renyi(int nodes, double mean_k, unsigned int rand
 
 }
 
-template <class T>
-void CNetwork<T>::create_configurational(int nodes, int mink, double gamma, unsigned int random_seed)
+template <class T, typename B>
+void CNetwork<T,B>::create_configurational(int nodes, int mink, double gamma, unsigned int random_seed)
 {
     int i,j;
     int n_links;
@@ -833,8 +838,8 @@ void CNetwork<T>::create_configurational(int nodes, int mink, double gamma, unsi
 
 }
 
-template <class T>
-void CNetwork<T>::create_wats_strogatz(int nodes, int num_forward_edges, double p, unsigned int random_seed)
+template <class T, typename B>
+void CNetwork<T,B>::create_wats_strogatz(int nodes, int num_forward_edges, double p, unsigned int random_seed)
 {
     int i,j;
     int to;
@@ -896,8 +901,8 @@ void CNetwork<T>::create_wats_strogatz(int nodes, int num_forward_edges, double 
 
 
 ///Creates an Albert-Barabasi free scale network
-template <class T>
-void CNetwork<T>::create_albert_barabasi(int m0, int m, unsigned int random_seed)
+template <class T, typename B>
+void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_seed)
 {
     int i,j;
     double r;
@@ -929,7 +934,8 @@ void CNetwork<T>::create_albert_barabasi(int m0, int m, unsigned int random_seed
                 //With half probability, add it to highly connected node,
                 //selecting randomly an edge.
                 index = uniform_int_distribution<int>(0, link_count-1);//-1 because interval is closed
-                add_link(current_size-1, links[2*index(gen)+1]); //Current_size-1 because we've added a node we don't have to account for; BEFORE WAS [index][OUT]
+                //add_link(current_size-1, links[2*index(gen)+1]); //Current_size-1 because we've added a node we don't have to account for; BEFORE WAS [index][OUT]
+                add_link(current_size-1, adjm[index(gen)].y);
             }
             else
             {
@@ -943,16 +949,18 @@ void CNetwork<T>::create_albert_barabasi(int m0, int m, unsigned int random_seed
     return;
 }
 
-/// ========================================================================================
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+/// ======================================================================================== ///
 
 
-
-/// ===================================== Getting info =====================================
-
+/// ======================================================================================== ///
+/// ===================================== Getting info ===================================== ///
+/// ======================================================================================== ///
 
 ///Get the degree of provided index
-template <class T>
-int CNetwork<T>::degree(int node_index)
+template <class T, typename B>
+int CNetwork<T,B>::degree(int node_index)
 {
     //return degree[node_index];
     return neighs[node_index].size();
@@ -960,8 +968,8 @@ int CNetwork<T>::degree(int node_index)
 
 
 ///Get the degree of provided index
-template <class T>
-int CNetwork<T>::get_link_index(int from, int to)
+template <class T, typename B>
+int CNetwork<T,B>::get_link_index(int from, int to)
 {
     int i,even,odd;
     bool found = false;
@@ -969,7 +977,7 @@ int CNetwork<T>::get_link_index(int from, int to)
 
     while (i < link_count and not found)
     {
-        found = (links[2*i] == from and links[2*i+1] == to) or (links[2*i] == to and links[2*i+1] == from);
+        found = (adjm[i].x == from and adjm[i].y == to) or (adjm[i].x == to and adjm[i].y == from);
         i += 1;
     }
 
@@ -977,73 +985,66 @@ int CNetwork<T>::get_link_index(int from, int to)
 }
 
 ///Returns the link in format (from, to) as a two-component vector
-template <class T>
-vector<int> CNetwork<T>::get_link(int link_index)
+template <class T, typename B>
+vector<int> CNetwork<T,B>::get_link(int link_index)
 {
-    return {links[2*link_index], links[2*link_index+1]};
+    return {adjm[link_index].x, adjm[link_index].y};
 }
 
 ///Get the weight
-template <class T>
-double CNetwork<T>::get_weight(int link_index)
+template <class T, typename B>
+B CNetwork<T,B>::get_weight(int link_index)
 {
-    return weight[link_index];
+    return adjm[link_index].value;
 }
 
 ///Get how many nodes we have
-template <class T>
-int CNetwork<T>::get_node_count()
+template <class T, typename B>
+int CNetwork<T,B>::get_node_count()
 {
     return current_size;
 }
 
 ///Get how many links we have
-template <class T>
-int CNetwork<T>::get_link_count()
+template <class T, typename B>
+int CNetwork<T,B>::get_link_count()
 {
     return link_count;
 }
 
 ///Returns a vector of neighbors of node_index
-template <class T>
-vector<unsigned int> CNetwork<T>::get_neighs(int node_index)
+template <class T, typename B>
+vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index)
 {
     return neighs[node_index];
 }
 
-///Returns how meany neighbours a node has
-template <class T>
-int CNetwork<T>::get_num_neighs(int node_index)
-{
-    return neighs[node_index].size();
-}
-
 ///Get the k neighbour of the node node_index
-template <class T>
-int CNetwork<T>::get_neigh_at(int node_index, int k)
+template <class T, typename B>
+int CNetwork<T,B>::get_neigh_at(int node_index, int k)
 {
     return neighs[node_index][k];
 }
-
+/*
 ///Returns element of the adjacency matrix, depending if
 ///we have selected or not a weighted network
-template <class T>
-int CNetwork<T>::get_a(int i, int j)
+template <class T, typename B>
+int CNetwork<T,B>::get_a(int i, int j)
 {
     return weighted_net ? a_w[i][j] : int(a[i][j]);
 }
-
+*/
 
 ///Set the value of a node
-template <class T>
-void CNetwork<T>::set_value(int index, T val)
+template <class T, typename B>
+void CNetwork<T,B>::set_value(int index, T val)
 {
     value[index] = val;
 }
 
 ///Get the value of a node
-template <class T>
-T CNetwork<T>::get_value(int index)
+template <class T, typename B>
+T CNetwork<T,B>::get_value(int index)
 {
     return value[index];
 }
@@ -1052,8 +1053,8 @@ T CNetwork<T>::get_value(int index)
 ///This function creates an standard graphml file format, which is able to store all the data of CNetwork:
 ///nodes, node labels, links and weights.
 
-template <class T>
-void CNetwork<T>::define_property(string name, string type, bool is_for_nodes)
+template <class T, typename B>
+void CNetwork<T,B>::define_property(string name, string type, bool is_for_nodes)
 {
     int n = is_for_nodes ? current_size : link_count;
 
@@ -1077,47 +1078,46 @@ void CNetwork<T>::define_property(string name, string type, bool is_for_nodes)
 }
 
 ///Following functions are overloads to set the value of a property
-template <class T>
-void CNetwork<T>::set_value(string name, int index, double value)
+template <class T, typename B>
+void CNetwork<T,B>::set_value(string name, int index, double value)
 {
-
     prop_d[name][index] = value;
 }
-template <class T>
-void CNetwork<T>::set_value(string name, int index, int value)
+template <class T, typename B>
+void CNetwork<T,B>::set_value(string name, int index, int value)
 {
     prop_i[name][index] = value;
 }
-template <class T>
-void CNetwork<T>::set_value(string name, int index, bool value)
+template <class T, typename B>
+void CNetwork<T,B>::set_value(string name, int index, bool value)
 {
     prop_b[name][index] = value;
 }
-template <class T>
-void CNetwork<T>::set_value(string name, int index, string value)
+template <class T, typename B>
+void CNetwork<T,B>::set_value(string name, int index, string value)
 {
     prop_s[name][index] = value;
 }
 
 ///Following functions are used to retrieve value from the properties
 
-template <class T>
-double CNetwork<T>::get_value_d(string name, int index)
+template <class T, typename B>
+double CNetwork<T,B>::get_value_d(string name, int index)
 {
     return prop_d[name][index];
 }
-template <class T>
-int CNetwork<T>::get_value_i(string name, int index)
+template <class T, typename B>
+int CNetwork<T,B>::get_value_i(string name, int index)
 {
     return prop_i[name][index];
 }
-template <class T>
-bool CNetwork<T>::get_value_b(string name, int index)
+template <class T, typename B>
+bool CNetwork<T,B>::get_value_b(string name, int index)
 {
     return prop_b[name][index];
 }
-template <class T>
-string CNetwork<T>::get_value_s(string name, int index)
+template <class T, typename B>
+string CNetwork<T,B>::get_value_s(string name, int index)
 {
     return prop_s[name][index];
 }
@@ -1125,8 +1125,8 @@ string CNetwork<T>::get_value_s(string name, int index)
 
 ///Used to write the network as a GRAPHML file. Optional argument labels is useful to name the nodes.
 
-template <class T>
-void CNetwork<T>::write_graphml(string filename, vector<string> labels)
+template <class T, typename B>
+void CNetwork<T,B>::write_graphml(string filename, vector<string> labels)
 {
     int i,j,k;
     ofstream output;
@@ -1216,7 +1216,7 @@ void CNetwork<T>::write_graphml(string filename, vector<string> labels)
         for (i=0; i < link_count; i++)
         {
             //And link using the labels
-            output << "<edge source=\"" << labels[links[2*i]] << "\" target=\"" << labels[links[2*i+1]] << "\">" << endl;
+            output << "<edge source=\"" << labels[adjm[i].x] << "\" target=\"" << labels[adjm[i].y] << "\">" << endl;
             for (auto &property : prop_d)
             {
                 if (property.second.size() != current_size ) //If this property if for links,
@@ -1294,7 +1294,7 @@ void CNetwork<T>::write_graphml(string filename, vector<string> labels)
         for (i=0; i < link_count; i++)
         {
             //And link using the labels
-            output << "<edge source=\"" << links[2*i] << "\" target=\"" << links[2*i+1] << "\">" << endl;
+            output << "<edge source=\"" << adjm[i].x << "\" target=\"" << adjm[i].y << "\">" << endl;
             for (auto &property : prop_d)
             {
                 if (property.second.size() != current_size ) //If this property if for links,
@@ -1337,8 +1337,8 @@ void CNetwork<T>::write_graphml(string filename, vector<string> labels)
 }
 
 ///Write the mtx format
-template <class T>
-void CNetwork<T>::write_mtx(string filename)
+template <class T, typename B>
+void CNetwork<T,B>::write_mtx(string filename)
 {
     ofstream output;
     int i;
@@ -1347,28 +1347,28 @@ void CNetwork<T>::write_mtx(string filename)
     //Write that this is a NxN matrix with link_count links
     output << current_size << " " << current_size << " " << link_count << endl;
     //Check if the used decided to use a weighted net
-    if (!weighted_net)
+    if (typeid(B) == typeid(bool))
     {
         for (i=0; i < link_count; i++)
         {
-            output << links[2*i] << " " << links[2*i+1] << endl; //Using a weight 1
+            output << adjm[i].x << " " << adjm[i].y << endl; //Using a weight 1
         }
     }
     else
     {
         for (i=0; i < link_count; i++)
         {
-            output << links[2*i] << " " << links[2*i+1] << " " << weight[i] << endl; //Arbitrary weight
+            output << adjm[i].x << " " << adjm[i].y << " " << adjm[i].value << endl; //Arbitrary weight
         }
     }
     output.close();
 }
 
-template <class T>
-void CNetwork<T>::read_mtx(string filename)
+template <class T, typename B>
+void CNetwork<T,B>::read_mtx(string filename)
 {
     //Destroy this object and create new network
-    clear_network(max_net_size, weighted_net);
+    clear_network(max_net_size);
 
     bool read_header = false; //To see if we have read the dim1xdim2 links line
     string line; //Store a line
@@ -1387,7 +1387,7 @@ void CNetwork<T>::read_mtx(string filename)
                 if (read_header) //Have we read the header?
                 {
                     //Then check if network is weighted
-                    if (!weighted_net)
+                    if (typeid(B) == typeid(bool))
                     {
                         iss >> from >> to; //Fill vars with data from stream
                         add_link(from, to);
@@ -1417,15 +1417,21 @@ void CNetwork<T>::read_mtx(string filename)
     input.close();
 }
 
-/// ========================================================================================
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+/// ======================================================================================== ///
 
 
-/// ============================= AUXILIARY FUNCTIONS ======================================
+/*
+
+/// ======================================================================================== ///
+/// ============================= AUXILIARY FUNCTIONS ====================================== ///
+/// ======================================================================================== ///
 
 
 //Producto de una matriz por un vector. Almacena el resultado de A*v en el vector r
-template <class T>
-void CNetwork<T>::matrixDotVector(vector< vector<double> > a, vector<double> v, vector<double>& r,  int n)
+template <class T, typename B>
+void CNetwork<T,B>::matrixDotVector(vector< vector<double> > a, vector<double> v, vector<double>& r,  int n)
 {
 	int i,j;
 	double sum;
@@ -1434,8 +1440,8 @@ void CNetwork<T>::matrixDotVector(vector< vector<double> > a, vector<double> v, 
 	/*for (i=0; i < n; i++)
 	{
 		r[i] = v[i];
-	}*/
-
+	} */
+    /*
 	sum = 0.0;
 	for (i=0; i < n; i++)
 	{
@@ -1452,8 +1458,8 @@ void CNetwork<T>::matrixDotVector(vector< vector<double> > a, vector<double> v, 
 }
 
 //Calcula el autovalor de un vector según la fórmula de Rayleigh y la devuelve
-template <class T>
-double CNetwork<T>::calculateLambda(vector< vector<double> > a, vector<double> v, int n)
+template <class T, typename B>
+double CNetwork<T,B>::calculateLambda(vector< vector<double> > a, vector<double> v, int n)
 {
     int i;
     double lambda;
@@ -1474,8 +1480,8 @@ double CNetwork<T>::calculateLambda(vector< vector<double> > a, vector<double> v
     return lambda;
 }
 
-template <class T>
-double CNetwork<T>::vectorNorm(vector<double>& v, int n)
+template <class T, typename B>
+double CNetwork<T,B>::vectorNorm(vector<double>& v, int n)
 {
     int i;
 
@@ -1491,8 +1497,8 @@ double CNetwork<T>::vectorNorm(vector<double>& v, int n)
 ///USE THE SUB-DIVISION METHOD TO COMPUTE MULTIPLE COMMUNITIES
 ///AFTER THAT, ADD IMPORT TO REAL NETWORKS
 ///POLISH A BIT THE CODE, SPECIALLY RANDOM NETWORK / DELETION OF STUFF
-template <class T>
-double CNetwork<T>::largest_eigenvalue(vector< vector<double> > matrix, vector<double>& v, int n, double approx_error, int max_it)
+template <class T, typename B>
+double CNetwork<T,B>::largest_eigenvalue(vector< vector<double> > matrix, vector<double>& v, int n, double approx_error, int max_it)
 {
     double calc_error = 1e10; //Start with high value so loop starts
     double lamb1, lamb2;
@@ -1528,6 +1534,6 @@ double CNetwork<T>::largest_eigenvalue(vector< vector<double> > matrix, vector<d
     }
 
     return lamb2;
-}
+} */
 
 
