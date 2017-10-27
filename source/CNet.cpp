@@ -63,7 +63,7 @@ class CNetwork
         int get_link_count();
         vector<unsigned int> get_neighs(int node_index);
         int get_neigh_at(int node_index, int k);
-        //int get_a(int i, int j);
+
 
         void define_property(string name, string type, bool is_for_nodes);
         void set_value(string name, int index, double value);
@@ -91,14 +91,11 @@ class CNetwork
         int max_net_size;
         int current_size;
         int link_count;
-        //vector<unsigned int> links;
+
         SparseMatrix<B> adjm;
 
-        //vector<double> weight;
 
         vector< vector<unsigned int> > neighs;
-        //vector< vector<bool> > a;
-        //vector< vector<double> > a_w;
 
         vector<T> value;
 
@@ -109,10 +106,8 @@ class CNetwork
         map<string, vector<string> > prop_s;
 
 
-        //void matrixDotVector(vector< vector<double> >a, vector<double> v, vector<double>& r,  int n);
-        //double calculateLambda(vector< vector<double> > a, vector<double> v, int n);
-        //double vectorNorm(vector<double>& v, int n);
-        //double largest_eigenvalue(vector< vector<double> > matrix, vector<double>& v, int n, double approx_error, int max_it);
+        double CNetwork<T,B>::largest_eigenvalue(double approx_error, int max_it = 20);
+
 
 };
 
@@ -141,12 +136,9 @@ void CNetwork<T,B>::clear_network(int max_size)
     link_count = 0; //Init link count
     //Create vectors in order to add things
     adjm = SparseMatrix<B>(0);
-    //links = vector<unsigned int>();
-    //weight = vector<double>();
+
     neighs = vector< vector<unsigned int> >(0, vector<unsigned int>(0));
 
-    //a = vector< vector<bool> >();
-    //a_w = vector< vector<double> >();
 
     prop_d = map<string, vector<double> >();
     prop_i = map<string, vector<int> >();
@@ -327,13 +319,9 @@ bool CNetwork<T,B>::remove_link(int from, int to)
     auto index_it = find(neighs[from].begin(), neighs[from].end(), to); //Relative index of TO in terms of FROM
     int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
 
-    /*if (from == 998 and to == 0) cout << endl << index_neigh << " " << neighs[from].size() << " " <<get_num_neighs(from) << endl;
-    if (from == 998 and to == 0) for (int j=0; j < 4; j++) cout << get_neigh_at(from, j) << " ";
-    if (from == 998 and to == 0) cout <<endl; */
-    //if (index_it < neighs[from].end())
+
     if (index_neigh >= 0 and index_neigh < neighs[from].size())
     {
-        //if (from == 173 and to == 174) cout << link_count << " " << weight.size() << endl;
         //int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
         int index_link = get_link_index(from, to);
 
@@ -443,7 +431,7 @@ double CNetwork<T,B>::clustering_coef(int node_index)
         //For the next nodes, (start in j=i+1 to avoid double-count a pair)
         for (j=i+1; j < nodes_neigh.size(); j++)
         {
-            //Use the fast find function from algorithm lib to see if this node is connected to any other neighbour of our node.
+            //Use the  find function to see if this node is connected to any other neighbour of our node.
             //In that case, increase the counter
             if (find(nodes_check.begin(), nodes_check.end(), nodes_neigh[j]) != nodes_check.end()) counter += 1;
         }
@@ -1422,118 +1410,20 @@ void CNetwork<T,B>::read_mtx(string filename)
 /// ======================================================================================== ///
 
 
-/*
+
 
 /// ======================================================================================== ///
 /// ============================= AUXILIARY FUNCTIONS ====================================== ///
 /// ======================================================================================== ///
 
 
-//Producto de una matriz por un vector. Almacena el resultado de A*v en el vector r
 template <class T, typename B>
-void CNetwork<T,B>::matrixDotVector(vector< vector<double> > a, vector<double> v, vector<double>& r,  int n)
+double CNetwork<T,B>::largest_eigenvalue(double approx_error, int max_it = 20)
 {
-	int i,j;
-	double sum;
-
-	//NOTE: eliminated without check
-	/*for (i=0; i < n; i++)
-	{
-		r[i] = v[i];
-	} */
-    /*
-	sum = 0.0;
-	for (i=0; i < n; i++)
-	{
-		sum = 0.0;
-		for (j=0; j < n; j++)
-		{
-			sum += a[i][j]*v[j];
-		}
-		r[i] = sum;
-	}
-
-
-	return;
+    return adjm.dom_eigen(approx_error, max_it);
 }
 
-//Calcula el autovalor de un vector según la fórmula de Rayleigh y la devuelve
-template <class T, typename B>
-double CNetwork<T,B>::calculateLambda(vector< vector<double> > a, vector<double> v, int n)
-{
-    int i;
-    double lambda;
-    double sum1,sum2;
-    vector<double> aux(v.size());
 
-    matrixDotVector(a,v,aux,n);
-
-    sum1=sum2=0.0;
-    for (i=0; i < n;i++)
-    {
-        sum1 += aux[i]*v[i];
-        sum2 += v[i]*v[i];
-    }
-
-    lambda = sum1 / sum2;
-
-    return lambda;
-}
-
-template <class T, typename B>
-double CNetwork<T,B>::vectorNorm(vector<double>& v, int n)
-{
-    int i;
-
-    double sum =0.0;
-    for (i=0; i < n; i++)
-    {
-        sum += v[i]*v[i];
-    }
-
-    return sqrt(sum);
-}
-
-///USE THE SUB-DIVISION METHOD TO COMPUTE MULTIPLE COMMUNITIES
-///AFTER THAT, ADD IMPORT TO REAL NETWORKS
-///POLISH A BIT THE CODE, SPECIALLY RANDOM NETWORK / DELETION OF STUFF
-template <class T, typename B>
-double CNetwork<T,B>::largest_eigenvalue(vector< vector<double> > matrix, vector<double>& v, int n, double approx_error, int max_it)
-{
-    double calc_error = 1e10; //Start with high value so loop starts
-    double lamb1, lamb2;
-    double norma;
-    vector<double> aux(n);
-    int i,j;
-
-    lamb1 = calculateLambda(matrix,v,n);
-    while(abs(calc_error) > approx_error && i < max_it)
-    {
-        matrixDotVector(matrix,v,aux,n); //Iteration A^k * v_k
-
-        //Compute lambda_k y lambda_(k+1)
-        //lamb1 = calculateLambda(matrix,v,n);
-        lamb2 = calculateLambda(matrix,aux,n);
-
-        //Calcular el error
-        if (lamb2 != 0.0)
-        {
-           calc_error = abs(lamb1-lamb2)/lamb2 * 100.0; //Compute the error
-        }
-
-        //Normalize the vector
-        norma = vectorNorm(aux,n);
-
-        for (j=0; j < n; j++)
-        {
-            v[j] = aux[j]/norma; //Set to v_k the v_k+1 vector
-        }
-        i++;
-
-        lamb1 = lamb2; //Store old value
-    }
-
-    return lamb2;
-} */
-
-
+/// ======================================================================================== ///
+/// ======================================================================================== ///
+/// ======================================================================================== ///
