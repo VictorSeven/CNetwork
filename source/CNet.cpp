@@ -85,6 +85,10 @@ class CNetwork
 
         CNetwork(int max_size);
 
+        vector<double> compute_eigenv(double approx_error, int max_it = 20);
+
+        SparseMatrix<B> adjm;
+
     private:
         void clear_network(int max_size);
 
@@ -92,7 +96,7 @@ class CNetwork
         int current_size;
         int link_count;
 
-        SparseMatrix<B> adjm;
+
 
 
         vector< vector<unsigned int> > neighs;
@@ -106,7 +110,7 @@ class CNetwork
         map<string, vector<string> > prop_s;
 
 
-        double CNetwork<T,B>::largest_eigenvalue(double approx_error, int max_it = 20);
+
 
 
 };
@@ -120,7 +124,7 @@ class CNetwork
 /// ======================================== Constructor =================================== ///
 /// ======================================================================================== ///
 
-///Create a newtork with a maximum size max_size
+///Create a network with a maximum size max_size
 template <class T, typename B>
 CNetwork<T,B>::CNetwork(int max_size)
 {
@@ -135,7 +139,7 @@ void CNetwork<T,B>::clear_network(int max_size)
     max_net_size = max_size; //Set the max size of the network
     link_count = 0; //Init link count
     //Create vectors in order to add things
-    adjm = SparseMatrix<B>(0);
+    adjm = SparseMatrix<B>(max_size, true);
 
     neighs = vector< vector<unsigned int> >(0, vector<unsigned int>(0));
 
@@ -258,7 +262,6 @@ template <class T, typename B>
 void CNetwork<T,B>::add_link(int from, int to)
 {
     adjm.push_back(data<bool>(from, to, true)); //Assume this method is for bools
-
     //links.push_back(from); //Even to origin,
     //links.push_back(to); //Odd to destiny
     //weight.push_back(1.0); //Unit weight
@@ -892,15 +895,22 @@ void CNetwork<T,B>::create_wats_strogatz(int nodes, int num_forward_edges, doubl
 template <class T, typename B>
 void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_seed)
 {
-    int i,j;
+    int i,j,k,l;
     double r;
 
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> random(0.0,1.0); //Uniform number distribution
     uniform_int_distribution<int>  index(0,1); //Useful to select indices
 
+    int index_add;
+    vector<int> yet_linked(m-1, -1); //Stores with which nodes I have visited. I only need to remember m-1 -I don't have to store the last
+    bool found;
+
+    ///TODO: solve the yet_linked problem
+
     //Create fully connected network with m0 nodes
     add_nodes(m0);
+    cout << current_size << endl;
     for (i=0; i < m0; i++)
     {
         for (j=i+1; j < m0; j++)
@@ -909,28 +919,51 @@ void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_se
         }
     }
 
+    cout << link_count << endl;
     //Add then more nodes...
     for (i = m0; i < max_net_size; i++)
     {
         add_nodes(1);
+
+        yet_linked = vector<int>(m-1, -1);
+        k = 0;
         //For every link we want to do,
         for (j=0; j < m; j++)
         {
             //Generate a random number
             if (random(gen) <= 0.5)
             {
-                //With half probability, add it to highly connected node,
-                //selecting randomly an edge.
+                //With half probability, add it to highly connected node, selecting randomly an edge.
                 index = uniform_int_distribution<int>(0, link_count-1);//-1 because interval is closed
+                index_add = adjm[index(gen)].y;
                 //add_link(current_size-1, links[2*index(gen)+1]); //Current_size-1 because we've added a node we don't have to account for; BEFORE WAS [index][OUT]
-                add_link(current_size-1, adjm[index(gen)].y);
+                //add_link(current_size-1, index_add);
+
             }
             else
             {
                 //If not, connect to a random node
                 index = uniform_int_distribution<int>(0, current_size-2); //We don't want current_size-1 which is the actual node, so up to -2
-                add_link(current_size-1, index(gen)); //Add the link
+                index_add = index(gen);
+                //add_link(current_size-1, index_add); //Add the link
             }
+
+            //Check there that we don't have still a link between the two...
+            found = false;
+            l = 0;
+            while (l < m-1 && !found && yet_linked[l] != -1) //Remember yet_linked.size = m - 1 always
+            {
+                found = index_add == yet_linked[l];
+                l++;
+            }
+            //If there is no previous link between both, then add it.
+            if (!found)
+            {
+                add_link(current_size-1, index_add); //Add the link
+                yet_linked[k] = index_add; //Say we explored it
+                k++; //To fill next vector element
+            }
+
         }
     }
 
@@ -1418,7 +1451,7 @@ void CNetwork<T,B>::read_mtx(string filename)
 
 
 template <class T, typename B>
-double CNetwork<T,B>::largest_eigenvalue(double approx_error, int max_it = 20)
+vector<double> CNetwork<T,B>::compute_eigenv(double approx_error, int max_it)
 {
     return adjm.dom_eigen(approx_error, max_it);
 }

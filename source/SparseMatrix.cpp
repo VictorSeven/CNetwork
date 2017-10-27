@@ -7,7 +7,7 @@
 
 using namespace std;
 
-template<class T = bool>
+template<typename T = bool>
 struct data
 {
     unsigned int x, y;
@@ -17,11 +17,12 @@ struct data
 };
 
 
-template<class T = bool>
+template<typename T = bool>
 class SparseMatrix
 {
 public:
 
+    SparseMatrix();
     SparseMatrix(int msize, bool symmetric);
     SparseMatrix(int type, int msize);
 
@@ -38,12 +39,13 @@ public:
     //Matrix exponentiation
     SparseMatrix<double> pow(int n);
     //Compute eigenvector
-    vector<double> dom_eigen(double epsilon);
+    vector<double> dom_eigen(double epsilon, int max_it);
 
 
     //Modify private variable msize
-    void set_size(int msize);
-    int get_size();
+    void set_max_size(int msize);
+    int get_max_size();
+    int get_number_elements();
 
     static const int SM_DIAGONAL = 0;
 
@@ -63,8 +65,15 @@ private:
 };
 
 
+template<typename T>
+SparseMatrix<T>::SparseMatrix()
+{
+    ;
+}
 
-template<class T>
+
+
+template<typename T>
 SparseMatrix<T>::SparseMatrix(int msize, bool symmetric)
 {
     m = vector<data<T>>();
@@ -73,7 +82,7 @@ SparseMatrix<T>::SparseMatrix(int msize, bool symmetric)
     is_symmetric = symmetric;
 }
 
-template<class T>
+template<typename T>
 SparseMatrix<T>::SparseMatrix(int type, int msize)
 {
     m = vector<data<T>>();
@@ -85,35 +94,53 @@ SparseMatrix<T>::SparseMatrix(int type, int msize)
         is_symmetric = true;
         if (typeid(T) == typeid(bool))  for (i=0; i < m_dim; i++)  m.push_back(data<bool>(i,i,true));
         else if (typeid(T) == typeid(double)) for (i=0; i < m_dim; i++)  m.push_back(data<double>(i,i,1.0));
-        else cout << "ERROR_TYPE: please use bool or double as SparseMatrix type" << endl;
+        else cout << "ERROR [SparseMatrix]: please use bool or double as SparseMatrix type" << endl;
     }
 }
 
 
-template<class T>
+template<typename T>
 void SparseMatrix<T>::push_back(data<T> d)
 {
+    /*int i;
+    bool found = false;
+    i = m.size() - 1;
+    while (i >= 0 && !found)
+    {
+        if (d.x == m[i].x && d.y == m[i].y)
+        {
+            found = true;
+        }
+        i--;
+    }
+    if (!found) m.push_back(d);
+    else return;*/
     m.push_back(d);
 }
 
-template<class T>
+template<typename T>
 void SparseMatrix<T>::erase(int index)
 {
     m.erase(m.begin() + index);
 }
 
-template<class T>
-void SparseMatrix<T>::set_size(int msize)
+template<typename T>
+void SparseMatrix<T>::set_max_size(int msize)
 {
     m_dim = msize;
 }
-template<class T>
-int SparseMatrix<T>::get_size()
+template<typename T>
+int SparseMatrix<T>::get_max_size()
 {
     return m_dim;
 }
+template<typename T>
+int SparseMatrix<T>::get_number_elements()
+{
+    return m.size();
+}
 
-template<class T>
+template<typename T>
 SparseMatrix<double> SparseMatrix<T>::convert_double()
 {
     int i;
@@ -128,7 +155,7 @@ SparseMatrix<double> SparseMatrix<T>::convert_double()
 }
 
 
-template<class T>
+template<typename T>
 vector<double> SparseMatrix<T>::operator *(vector<double> &v)
 {
     int i;
@@ -164,7 +191,7 @@ vector<double> SparseMatrix<T>::operator *(vector<double> &v)
 
 
 
-template<class T>
+template<typename T>
 SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
 {
     int i,j;
@@ -280,13 +307,13 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
     return u;
 }
 
-template<class T>
+template<typename T>
 data<T> SparseMatrix<T>::operator [](int index)
 {
     return m[index];
 }
 
-template<class T>
+template<typename T>
 SparseMatrix<double> SparseMatrix<T>::pow(int n)
 {
     if (n == 2)
@@ -310,7 +337,7 @@ SparseMatrix<double> SparseMatrix<T>::pow(int n)
 }
 
 //Note: it return a vector double where the last element is the eigenvalue
-template<class T>
+template<typename T>
 vector<double> SparseMatrix<T>::dom_eigen(double epsilon, int max_it)
 {
     int i,j;
@@ -323,9 +350,11 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon, int max_it)
     mt19937 gen(rnd_device());
     uniform_real_distribution<double> ran_u(0.0, 1.0);
 
+    //Declare random vector of size m_dim
     vector<double> b = vector<double>(m_dim);
     vector<double> bm = vector<double>(m_dim);
     double eigen, old_eigen;
+    double calc_error;
 
     //Make the vector completely random to avoid being orthogonal to eigenvector
     i = 0;
@@ -339,8 +368,9 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon, int max_it)
     //Very different values to avoid not-entering in loop
     eigen = 0.0;
     old_eigen = 1000.0;
+    calc_error = 1.0;
     i = 0;
-    while (abs(eigen-old_eigen) > epsilon && i < max_it)
+    while (calc_error > epsilon && i < max_it)
     {
         bm = *(this) * b;
 
@@ -357,19 +387,24 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon, int max_it)
         }
         eigen = scp1 / scp2; //Get new eigenvalue
 
+
         normalize_vector(bm); //Normalize this stuff
 
         b = bm; //Update
 
+        if (old_eigen != 0) calc_error = abs((eigen - old_eigen) / old_eigen);
+
         i++;
     }
+
+    if (i >= max_it) cout << "WARNING [SparseMatrix]: eigenvalue max number of iterations reached. Computation probably did NOT converge." << endl;
 
     bm.push_back(eigen); //Add the eigenvalue as the last element of the vector
 
     return bm;
 }
 
-template<class T>
+template<typename T>
 void SparseMatrix<T>::normalize_vector(vector<double> &v)
 {
     int i;
@@ -395,7 +430,7 @@ void SparseMatrix<T>::normalize_vector(vector<double> &v)
 }
 
 //Computes scalar product between two vectors
-template<class T>
+template<typename T>
 double SparseMatrix<T>::scalar_product(vector<double> &u, vector<double> &v)
 {
     int i;
