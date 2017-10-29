@@ -353,44 +353,6 @@ bool CNetwork<T,B>::remove_link(int from, int to)
 
 }
 
-/*
-///Writes the adjacency matrix
-template <class T, typename B>
-void CNetwork<T,B>::create_adjacency_matrix()
-{
-    int i,j;
-    int aux;
-
-    if (!weighted_net)
-    {
-        a = vector< vector<bool> >(current_size, vector<bool>(current_size, false) );
-        //cout << "Adj. Matrix Byte Size = " << sizeof(a) + sizeof(vector<bool>) * current_size * current_size;
-
-        for (i=0; i < current_size; i++)
-        {
-            for (j=0; j < get_num_neighs(i); j++)
-            {
-                a[i][get_neigh_at(i,j)] = true;
-            }
-        }
-    }
-    else
-    {
-        a_w = vector< vector<double> >(current_size, vector<double>(current_size, 0.0) );
-        //cout << "Adj. Matrix Byte Size = " << sizeof(a) + sizeof(vector<bool>) * current_size * current_size;
-
-        for (i=0; i < current_size; i++)
-        {
-            for (j=0; j < get_num_neighs(i); j++)
-            {
-                a_w[i][get_neigh_at(i,j)] = weight[get_link_index(i, get_neigh_at(i,j))];
-            }
-        }
-    }
-
-    return;
-}*/
-
 /// ======================================================================================== ///
 /// ======================================================================================== ///
 /// ======================================================================================== ///
@@ -534,7 +496,6 @@ int CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<in
     {
         if (!visited[i]) //If we have not visited this node before,
         {
-            //cout << i << endl;
             remaining -= 1; //We have one less to see
             visited[i] = true; //Mark it
             breadth_first_search(i, node_list, dist); //Compute paths from i to all other nodes and store them
@@ -595,7 +556,6 @@ double CNetwork<T,B>::average_pathlenght()
         pathlenght = 0.0; //Start sum for average
         if (!visited[i]) //If we have not visited this node before,
         {
-            //cout << i << endl;
             remaining -= 1; //We have one less to see
             visited[i] = true; //Mark it
             breadth_first_search(i, node_list, dist); //Compute paths from i to all other nodes and store them
@@ -605,7 +565,6 @@ double CNetwork<T,B>::average_pathlenght()
             {
                 if (dist[j] >= 0) //The condition is that distance is positive
                 {
-                    //cout << "-- " << j << endl;
                     cluster_index.push_back(j); //Store reachable nodes
                     pathlenght += dist[j]; //Add the average distance to them
                 }
@@ -672,7 +631,6 @@ vector<int> CNetwork<T,B>::degree_distribution()
         result.erase(result.begin() + i);
         i -= 1;
     }
-    //cout << result.size() << endl;
     return result;
 }
 
@@ -910,7 +868,6 @@ void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_se
 
     //Create fully connected network with m0 nodes
     add_nodes(m0);
-    cout << current_size << endl;
     for (i=0; i < m0; i++)
     {
         for (j=i+1; j < m0; j++)
@@ -919,7 +876,6 @@ void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_se
         }
     }
 
-    cout << link_count << endl;
     //Add then more nodes...
     for (i = m0; i < max_net_size; i++)
     {
@@ -1427,10 +1383,6 @@ void CNetwork<T,B>::read_mtx(string filename)
                     add_nodes(from); //Add N nodes to the network
                 }
 
-            }
-            else
-            {
-                 cout << line[0] << endl; //Ignore line
             }
 
         }

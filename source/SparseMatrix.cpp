@@ -29,11 +29,12 @@ public:
     void push_back(data<T> d); //Adds an element
     void erase(int index);
 
-
+    double trace();
 
     //Multiplication by vectors or matrices
     vector<double> operator *(vector<double> &v);
-    SparseMatrix<double> operator *(SparseMatrix<T> &s);
+    template<typename R>
+    SparseMatrix<double> operator *(SparseMatrix<R> &s);
     data<T> operator [](int index);
 
     //Matrix exponentiation
@@ -49,13 +50,15 @@ public:
 
     static const int SM_DIAGONAL = 0;
 
+    bool is_symmetric;
+
+
     vector<data<T>> m;
 
 private:
 
     unsigned int m_dim;
 
-    bool is_symmetric;
 
     SparseMatrix<double> convert_double();
 
@@ -102,19 +105,6 @@ SparseMatrix<T>::SparseMatrix(int type, int msize)
 template<typename T>
 void SparseMatrix<T>::push_back(data<T> d)
 {
-    /*int i;
-    bool found = false;
-    i = m.size() - 1;
-    while (i >= 0 && !found)
-    {
-        if (d.x == m[i].x && d.y == m[i].y)
-        {
-            found = true;
-        }
-        i--;
-    }
-    if (!found) m.push_back(d);
-    else return;*/
     m.push_back(d);
 }
 
@@ -191,8 +181,8 @@ vector<double> SparseMatrix<T>::operator *(vector<double> &v)
 
 
 
-template<typename T>
-SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
+template<typename T> template <typename R>
+SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<R> &s)
 {
     int i,j;
     int m_index;
@@ -206,8 +196,8 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
 
     bool mdiag, smdiag;
 
-
-    SparseMatrix<double> u = SparseMatrix<double>(m_dim, false); //New matrix
+    //New matrix. A*B is symmetric if [A,B] = 0. If we are computing A^n, this holds, so check it
+    SparseMatrix<double> u = SparseMatrix<double>(m_dim, false);
 
     data<T> aux = data<T>();
 
@@ -216,11 +206,11 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
     {
         for (i=0; i < msize; i++)
         {
+            mdiag = m[i].x == m[i].y;
+
             for (j=0; j < smsize; j++)
             {
-                mdiag = m[i].x && m[i].y;
-                smdiag = s.m[j].x && s.m[j].y;
-
+                smdiag = s.m[j].x == s.m[j].y;
                 //Only these elements survive...
                 if (mdiag)
                 {
@@ -241,7 +231,7 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
                     //In this case we always have mdiag = false, so only s matrix is symmetric.
                     //Then compare one element in s with the two in m
                     if (m[i].y == s.m[j].x) proxy[m[i].x][s.m[j].y] += m[i].value * s.m[j].value;
-                    if (m[i].x == s.m[j].x)  proxy[m[i].y][s.m[j].y] += m[i].value * s.m[j].value;
+                    if (m[i].x == s.m[j].x) proxy[m[i].y][s.m[j].y] += m[i].value * s.m[j].value;
                 }
                 else
                 {
@@ -250,7 +240,7 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
                     //If s matrix is symmetric, then swapping  x and y in m also works.
                     if (m[i].y == s.m[j].y) proxy[m[i].x][s.m[j].x] += m[i].value * s.m[j].value;
                     //If my matrix is symmetric, then swapping  x and y in m also works
-                    if (m[i].x == s.m[j].x)  proxy[m[i].y][s.m[j].y] += m[i].value * s.m[j].value;
+                    if (m[i].x == s.m[j].x) proxy[m[i].y][s.m[j].y] += m[i].value * s.m[j].value;
                     //Swap on both!
                     if (m[i].x == s.m[j].y) proxy[m[i].y][s.m[j].x] += m[i].value * s.m[j].value;
                 }
@@ -267,7 +257,7 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
                 //Only these elements survive
                 if (m[i].y == s.m[j].x) proxy[m[i].x][s.m[j].y] += m[i].value * s.m[j].value;
                 //If my matrix is symmetric, then swapping  x and y in m also works
-                else if (m[i].x == s.m[j].x) proxy[m[i].y][s.m[j].y] += m[i].value * s.m[j].value;
+                if (m[i].x == s.m[j].x) proxy[m[i].y][s.m[j].y] += m[i].value * s.m[j].value;
             }
         }
     }
@@ -307,6 +297,39 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<T> &s)
     return u;
 }
 
+
+
+template<typename T>
+double SparseMatrix<T>::trace()
+{
+
+    int i;
+    double sum = 0.0;
+
+    i = m.size() - 1;
+
+    if (typeid(T) == typeid(bool))
+    {
+        //In this case, we know that the value is one, so we can sum directly over the condition
+        while (i > 0)
+        {
+            sum += m[i].x == m[i].y;
+            i--;
+        }
+    }
+    else
+    {
+        //In other case, first check condition and then sum value...
+        while (i > 0)
+        {
+            sum += m[i].x == m[i].y ? m[i].value : 0.0;
+            i--;
+        }
+    }
+
+    return sum;
+}
+
 template<typename T>
 data<T> SparseMatrix<T>::operator [](int index)
 {
@@ -316,23 +339,17 @@ data<T> SparseMatrix<T>::operator [](int index)
 template<typename T>
 SparseMatrix<double> SparseMatrix<T>::pow(int n)
 {
-    if (n == 2)
-    {
-        return *(this) * *(this);
-    }
-    else
-    {
-        int i=0;
-        SparseMatrix<double> this_double = this->convert_double();
-        SparseMatrix<double> s = this_double * this_double;
 
-        while (i < n-2) //So if n=3 we get this*this*this
-        {
-            s = this_double * s;
-            i++;
-        }
-        return s;
+    int i=0;
+    SparseMatrix<double> s = *(this) * *(this);
+    while (i < n-2) //So if n=3 we get this*this*this
+    {
+        s = *(this) * s;
+        i++;
     }
+
+
+    return s;
 
 }
 
