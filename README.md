@@ -38,7 +38,7 @@ See the wiki for more details on the use of CNetwork.
 
 ## Simple benchmark
 
-To measure the speed of CNetwork, use the following example: create an Albert-Barabási network of one million nodes and get the largest eigenvalue.
+To measure the speed of CNetwork, I used the following example: create an Albert-Barabási network of one million nodes and get the largest eigenvalue.
 
     #include<iostream>
     #include<cstdlib>
@@ -51,13 +51,13 @@ To measure the speed of CNetwork, use the following example: create an Albert-Ba
     {
         CNetwork<> net(20000); //Create a network of max size 20000 nodes
         net.create_albert_barabasi(2, 2, 5464531); //Fill this size with AB model
-        //compute_eigenv return a (N+1) vector where the largest eigenvalue is the last element
+        //compute_eigenv returns a (N+1) vector where the largest eigenvalue is the last element
         vector<double> eigenv = net.compute_eigenv(0.01);
         cout << eigenv[eigenv.size() -1] << endl; //Get the eigenvalue
     }
 
 
-The code above only needs **1.953** seconds to run on a moderately old computer (i3-370M processor, 2.4 GHz, from 2010). For comparison, I executed a similar code on Python's NetworkX. Only the creation of the network via
+The code above only needs **1.953** seconds (less than 2s!) to run on a moderately old computer (i3-370M processor, 2.4 GHz, from 2010). For comparison, I executed a similar code on Python's NetworkX. Only the creation of the network via
 
     %timeit nx.barabasi_albert_graph(1000000, 2, 5464531) 
 
@@ -67,4 +67,4 @@ gives 16.1 seconds. Saving the network into a variable a computing its Laplacian
 
 gives 15.4 seconds, making a total of ~30 seconds.  
 
-Probably other libraries, as igraph, are able to run faster than my times. However, **the real advantage of CNetwork is being as simple to code as NetworkX but several times faster.** 
+Probably other libraries, as igraph, are able to run faster than CNetwork. However, **the real advantage of CNetwork is being as simple to code as NetworkX but several times faster.** 

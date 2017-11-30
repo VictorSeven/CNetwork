@@ -14,21 +14,24 @@
 #define IN 0
 #define OUT 1
 
-/* ==================================================================================
 
-Victor Buendía CNetwork Class
+using namespace std;
+
+/* =======================================================================================================
+
+Victor BuendÃ­a's CNetwork Class
 
 This software is Open Source and redistributed with a MIT LICENSE (Read LICENSE file for more details).
 Please follow license terms when using this code.
 
-=================================================================================== */
+========================================================================================================== */
 
-using namespace std;
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
 
-/// ======================================================================================== ///
-/// ==================================== Class definition ================================== ///
-/// ======================================================================================== ///
 
+///CNetwork<class, type> base class.
 template <class T = bool, typename B = bool>
 class CNetwork
 {
@@ -45,14 +48,17 @@ class CNetwork
         double clustering_coef(int node_index);
         double mean_clustering_coef();
         void breadth_first_search(int node, vector<int> &node_indices, vector<int> &dist);
-        int component_size(vector<int> &node_in_this_component, vector<int> &size_of_components);
-        vector<int> degree_distribution();
-        vector<double> degree_correlation(vector<int> &distribution);
+        void component_nodes(int index, vector<int> &list_nodes, int comp_size = -1);
+        void component_size(vector<int> &node_in_this_component, vector<int> &size_of_components);
+        int largest_component_size();
+        void degree_distribution(vector<int> &distribution, bool normalized = false);
+        void degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized = false);
         double average_pathlenght();
+        double average_pathlenght_component(int component_index, int comp_size = -1);
 
-        void create_albert_barabasi(int m0, int m, unsigned int random_seed);
+        void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed);
         void create_configurational(int nodes, int kmin, double gamma, unsigned int random_seed);
-        void create_wats_strogatz(int nodes, int regular_connections, double p, unsigned int random_seed);
+        void create_watts_strogatz(int nodes, int regular_connections, double p, unsigned int random_seed);
         void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed);
 
         int degree(int node_index);
@@ -115,16 +121,13 @@ class CNetwork
 
 };
 
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-/// ======================================================================================== ///
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
 
 
-/// ======================================================================================== ///
-/// ======================================== Constructor =================================== ///
-/// ======================================================================================== ///
 
-///Create a network with a maximum size max_size
+///Create a network with a maximum number of nodes max_size
 template <class T, typename B>
 CNetwork<T,B>::CNetwork(int max_size)
 {
@@ -132,6 +135,7 @@ CNetwork<T,B>::CNetwork(int max_size)
     return;
 }
 
+///Delete all the information stored an inits a new network
 template <class T, typename B>
 void CNetwork<T,B>::clear_network(int max_size)
 {
@@ -155,15 +159,11 @@ void CNetwork<T,B>::clear_network(int max_size)
     return;
 }
 
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
 
 
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-
-/// ======================================================================================== ///
-/// ================================= Add info functions =================================== ///
-/// ======================================================================================== ///
 
 
 ///Add n nodes to the network
@@ -185,6 +185,7 @@ void CNetwork<T,B>::add_nodes(int n)
     return;
 }
 
+///Remove the node labeled by index
 template <class T, typename B>
 bool CNetwork<T,B>::remove_node(int index)
 {
@@ -257,16 +258,15 @@ bool CNetwork<T,B>::remove_node(int index)
     else return false;
 }
 
-///Create a link between nodes from and to and weight w
+///Create a link between nodes from and to
 template <class T, typename B>
 void CNetwork<T,B>::add_link(int from, int to)
 {
     adjm.push_back(data<bool>(from, to, true)); //Assume this method is for bools
-    //links.push_back(from); //Even to origin,
-    //links.push_back(to); //Odd to destiny
-    //weight.push_back(1.0); //Unit weight
+
     neighs[from].push_back(to); //Add the node to the neighbours
     neighs[to].push_back(from); //And do it in the other sense also
+
     link_count += 1; //Create one link more
     return;
 }
@@ -275,42 +275,13 @@ void CNetwork<T,B>::add_link(int from, int to)
 template <class T, typename B>
 void CNetwork<T,B>::add_link(int from, int to, B w)
 {
-
-    /*int i = 0;
-    bool existe = false;
-    int rep_index;
-
-    while (i < link_count and !existe)
-    {
-        if ((links[2*i] == from and links[2*i+1] == to) or (links[2*i] == to and links[2*i+1] == from))
-        {
-            rep_index = i;
-
-            existe = true;
-        }
-        i+=1;
-    }*/
-
-    //if (!existe)
-    //{
-
     adjm.push_back(data<B>(from, to, w)); //Assume this method is for weighted things
-
-    //links.push_back(from); //Even to origin,
-    //links.push_back(to); //Odd to destiny
-    //weight.push_back(w); //Unit weight
 
     neighs[from].push_back(to); //Add the node to the neighbours
     neighs[to].push_back(from); //And do it in the other sense also
 
     link_count += 1; //Create one link more
 
-
-    //}
-    /*else
-    {
-        weight[rep_index] += w;
-    }*/
     return;
 }
 
@@ -353,13 +324,15 @@ bool CNetwork<T,B>::remove_link(int from, int to)
 
 }
 
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-/// ======================================================================================== ///
 
-/// ======================================================================================== ///
-/// ================================= Topology functions =================================== ///
-/// ======================================================================================== ///
+
+
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
+
+
+
 
 ///Compute the mean degree of the network and returns it
 template <class T, typename B>
@@ -377,36 +350,37 @@ double CNetwork<T,B>::mean_degree()
     return sum / (current_size * 1.0);
 }
 
+
 ///Computes the clustering coefficient of a particular node
 template <class T, typename B>
 double CNetwork<T,B>::clustering_coef(int node_index)
 {
-    int i,j;
-    int counter; //Count of pairs
-
-
-    vector<unsigned int> nodes_neigh = get_neighs(node_index);
-    vector<unsigned int> nodes_check;
-
-    counter = 0;
-    for (i=0; i < nodes_neigh.size(); i++) //Get neighbours of our node
+    if (degree(node_index) > 1) //If we have more than one neighbour...
     {
-        nodes_check = get_neighs(nodes_neigh[i]); //Get neighbours of node i
+        int i,j;
+        int counter; //Count of pairs
 
-        //For the next nodes, (start in j=i+1 to avoid double-count a pair)
-        for (j=i+1; j < nodes_neigh.size(); j++)
+
+        vector<unsigned int> nodes_neigh = get_neighs(node_index);
+        vector<unsigned int> nodes_check;
+
+        counter = 0;
+        for (i=0; i < nodes_neigh.size(); i++) //Get neighbours of our node
         {
-            //Use the  find function to see if this node is connected to any other neighbour of our node.
-            //In that case, increase the counter
-            if (find(nodes_check.begin(), nodes_check.end(), nodes_neigh[j]) != nodes_check.end()) counter += 1;
-        }
-    }
+            nodes_check = get_neighs(nodes_neigh[i]); //Get neighbours of node i
 
-    if (degree(node_index) > 1)
-    {
+            //For the next nodes, (start in j=i+1 to avoid double-count a pair)
+            for (j=i+1; j < nodes_neigh.size(); j++)
+            {
+                //Use the  find function to see if this node is connected to any other neighbours of our node.
+                //In that case, increase the counter
+                if (find(nodes_check.begin(), nodes_check.end(), nodes_neigh[j]) != nodes_check.end()) counter += 1;
+            }
+        }
+
         return 2.0 * counter / (degree(node_index) * (degree(node_index) - 1)); //Finish computation and return clustering coefficient
     }
-    else
+    else //... in other case, we cannot have common neighbours
     {
         return 0.0;
     }
@@ -430,7 +404,8 @@ double CNetwork<T,B>::mean_clustering_coef()
 }
 
 
-///Compute all the pathlenghts from node using the optimized version from Newman's book
+///Find distance from node to every node in the network using Newman's algorithm.
+///Returns: dist[j] has the distance to node_indices[j]. It is -1 if could not reach it.
 template <class T, typename B>
 void CNetwork<T,B>::breadth_first_search(int node, vector<int> &node_indices, vector<int> &dist)
 {
@@ -474,13 +449,65 @@ void CNetwork<T,B>::breadth_first_search(int node, vector<int> &node_indices, ve
     return;
 }
 
-///Use the breadth first search to get size of bigger component of the network
+
+///Gets the indices of the nodes that are in the same component that index. If the component size is known beforehand, performs better.
 template <class T, typename B>
-int CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components)
+void CNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, int comp_size)
+{
+    int i,j;
+
+
+    vector<int> node_list(current_size); //List of nodes
+    vector<int> dist(current_size); //Distance to nodes
+
+    //If user has specified component-size, allocate memory once and do all the stuff...
+    if (comp_size > 0)
+    {
+        list_nodes = vector<int>(comp_size);
+
+        breadth_first_search(index, node_list, dist); //Use this to get all the nodes in my component
+
+        j = 0;
+        for (i = 0; i < current_size; i++)
+        {
+            if (dist[i] >= 0)
+            {
+                list_nodes[j] = i;
+                j++;
+            }
+        }
+    }
+    //If not, declare vectors and push_back the elements.
+    else
+    {
+        list_nodes = vector<int>();
+
+        breadth_first_search(index, node_list, dist); //Use this to get all the nodes in my component
+
+        j = 0;
+        for (i = 0; i < current_size; i++)
+        {
+            if (dist[i] >= 0)
+            {
+                list_nodes.push_back(i);
+                j++;
+            }
+        }
+    }
+
+
+    return;
+}
+
+
+///Use the breadth first search to get size of all network components.
+///Returns: node_in_this_component[j] has the index of a single node inside component j. size_of_components[j] has the size of component j.
+template <class T, typename B>
+void CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components)
 {
     int i,j,k;
 
-    int remaining = current_size;
+    int remaining = current_size; //How many nodes we have to evaluate yet
 
     node_in_this_component = vector<int>();
     size_of_components = vector<int>();
@@ -503,6 +530,7 @@ int CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<in
             size_of_components.push_back(0); //Size is equal to zero when we start
             node_in_this_component.push_back(i); //The node we are now visiting is in this component - store it
 
+            //Check every node
             for (j=0; j < current_size; j++)
             {
                 if (dist[j] >= 0) //If distance is positive, this is inside my cluster
@@ -520,128 +548,140 @@ int CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<in
         i += 1;
     }
 
-    result = 0;
-    for (i=0; i < size_of_components.size(); i++)
-    {
-        if (size_of_components[i] > result)
-        {
-            result = size_of_components[i];
-        }
-    }
 
-
-    return result;
+    return;
 }
 
-///Computes the average path lenght of the network
+///Compute the size of the largest component.
+template <class T, typename B>
+int CNetwork<T,B>::largest_component_size()
+{
+    int largest_size = 0;
+    int i;
+
+    //Vectors for computing component size
+    vector<int> node_in_this_component;
+    vector<int> size_of_components;
+
+    component_size(node_in_this_component, size_of_components); //Get the size of all components
+
+    return *max_element(size_of_components.begin(), size_of_components.end());
+}
+
+
+///Computes the average path length of the whole network
 template <class T, typename B>
 double CNetwork<T,B>::average_pathlenght()
 {
-    int i,j,k; //Counters
-    //double sum;
-    //int connected;
-    int remaining = current_size; //How many nodes we have yet to evaluate
-    int node; //auxiliar variable
+    int i,j; //Counters
 
-    vector<bool> visited(current_size, false); //List of visited nodes
-    vector<int> cluster_index = vector<int>(); //What nodes are reachable from me
-    double pathlenght, maxpathlenght; //To account for pathlenght
+    int counter = 0;
+    double pathlenght; //To account for pathlenght
+
     vector<int> node_list(current_size); //List of nodes
     vector<int> dist(current_size); //Distance to nodes
 
-    maxpathlenght = 0.9; //Start with value > 0 so not every value will override this
-    i = 0; //Init counters
-    while (i < current_size and remaining > 0) //While we have work to do,
+    pathlenght = 0.0; //Start sum for average
+    counter = 0;
+    for (i=0; i < current_size; i++)
     {
-        pathlenght = 0.0; //Start sum for average
-        if (!visited[i]) //If we have not visited this node before,
+        breadth_first_search(i, node_list, dist); //Get the distance to all the other nodes
+
+        //If the distance is greater than 0, then add it to average
+        for (j=0; j < current_size; j++)
         {
-            remaining -= 1; //We have one less to see
-            visited[i] = true; //Mark it
-            breadth_first_search(i, node_list, dist); //Compute paths from i to all other nodes and store them
-
-            //See which nodes are reachable from i
-            for (j=0; j < current_size; j++)
+            if (dist[j] > 0)
             {
-                if (dist[j] >= 0) //The condition is that distance is positive
-                {
-                    cluster_index.push_back(j); //Store reachable nodes
-                    pathlenght += dist[j]; //Add the average distance to them
-                }
+                pathlenght += dist[j];
+                counter++;
             }
-
-            //Add the contribution of this marked nodes to the average pathlenght of this cluster
-            for (j=0; j < cluster_index.size(); j++)
-            {
-                node = cluster_index[j]; //Get the selected node
-                //If we have not visited it yet (to avoid counting first node found twice)
-                if (!visited[node])
-                {
-                    breadth_first_search(node, node_list, dist); //Compute paths from i to all other nodes and store them
-                    visited[node] = true; //Mark as visited now
-                    remaining -= 1; //Eliminate from remaining list
-                    //We know beforehand which nodes we have to sum, because this are the reachable ones.
-                    for (k=0; k < cluster_index.size(); k++)
-                    {
-                        pathlenght += dist[cluster_index[k]];
-                    }
-                }
-            }
-
-            //Finish pathlenght. Avoid single node divergence
-            if (cluster_index.size() > 1)
-            {
-                pathlenght /= cluster_index.size() * (cluster_index.size() - 1);
-            }
-            else
-            {
-                pathlenght = 0.0;
-            }
-
-            //Check if this is max
-            if (pathlenght > maxpathlenght)
-            {
-                maxpathlenght = pathlenght;
-            }
-
-            cluster_index.clear(); //Clear this var for another run
         }
-
-        i += 1;
     }
 
-    return maxpathlenght; //Return path lenght of largest component.
+    return (counter > 0) ? pathlenght / (1.0 * counter) : -1.0; //Return the average pathlenght of the network
 }
 
-///TODO marked for revision
+
+///Computes the average pathlenght inside the component. To component is selected via the index of a node inside the component.
 template <class T, typename B>
-vector<int> CNetwork<T,B>::degree_distribution()
+double CNetwork<T,B>::average_pathlenght_component(int component_index, int comp_size)
+{
+    int i,j;
+
+
+    int counter;
+    double pathlength;
+
+    int index;
+
+    vector<int> cluster_index; //What nodes are reachable from me
+    vector<int> node_list(comp_size); //List of nodes
+    vector<int> dist(current_size); //Distance to nodes
+
+    //Get the nodes in this component
+    component_nodes(component_index, cluster_index, comp_size);
+
+    counter = 0;
+    pathlength = 0.0;
+    for (i=0; i < cluster_index.size(); i++)
+    {
+        index = cluster_index[i];
+        breadth_first_search(index, node_list, dist); //Now compute distances
+        for (j=0; j < cluster_index.size(); j++)
+        {
+            if (cluster_index[j] != index)
+            {
+                pathlength += dist[cluster_index[j]];
+                counter++;
+            }
+        }
+    }
+
+
+    return (counter > 0) ? pathlength / (1.0 * counter) : -1.0; //Return the average pathlenght of the network
+}
+
+
+
+///Computes the degree distribution of the network and stores it in the distribution vector. Optional argument allows to normalize the distribution
+template <class T, typename B>
+void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normalized)
 {
     int i;
-    vector<int> result(current_size, 0);
+    distribution = vector<int>(current_size, 0);
     //Compute the degree distribution
     for (i=0; i < current_size; i++)
     {
-        result[degree(i)] += 1;
+        distribution[degree(i)] += 1;
     }
-    //Erase the 0 at the end of the array
+
+    //Erase the 0s at the end of the array.
     i = current_size - 1; //Start counter
-    while (result[i] == 0)
+    while (distribution[i] == 0)
     {
-        result.erase(result.begin() + i);
+        //distribution.erase(distribution.begin() + i);
+        distribution.pop_back();
         i -= 1;
     }
-    return result;
+
+    //Normalize the distribution if it has been indicated
+    if (normalized)
+    {
+        for (i=0; i < distribution.size(); i++)
+        {
+            distribution[i] /= link_count;
+        }
+    }
+    return;
 }
 
-///Compute the degree correlation (also return degree distribution)
+///Compute the degree correlation (also return degree distribution). Optional argument allows to normalize degree distribution.
 template <class T, typename B>
-vector<double> CNetwork<T,B>::degree_correlation(vector<int> &distribution)
+void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized)
 {
     int i,j,k;
     int index, numneighs;
     double mean_neigh_degree; //Average degree of the neighbour of a node
-    vector<double> result;
 
     int maxdegree = 0;
     //Get the maximum degree of the network
@@ -654,7 +694,7 @@ vector<double> CNetwork<T,B>::degree_correlation(vector<int> &distribution)
     }
 
     //Use it to create containers able to handle the distribution
-    result = vector<double>(maxdegree, 0.0);
+    correlation = vector<double>(maxdegree, 0.0);
     distribution = vector<int>(maxdegree, 0);
 
     //Now compute the distributions
@@ -671,39 +711,47 @@ vector<double> CNetwork<T,B>::degree_correlation(vector<int> &distribution)
             mean_neigh_degree += degree(k); //Add its degree
         }
         if (numneighs != 0) mean_neigh_degree /= 1.0 * numneighs; //Finish the average
-        result[index] += mean_neigh_degree; //Put it into the distribution
+        correlation[index] += mean_neigh_degree; //Put it into the distribution
     }
 
     //To finish average over nodes, divide by the number of nodes with degree k
     //This are in distribution. Check that we are not dividing by 0
-    for (i=0; i < result.size(); i++)
+    for (i=0; i < correlation.size(); i++)
     {
-        if (distribution[i] != 0) result[i] /= 1.0*distribution[i];
+        if (distribution[i] != 0) correlation[i] /= 1.0*distribution[i];
     }
 
-    return result;
+    if (normalized)
+    {
+        for (i=0; i < distribution.size(); i++)
+        {
+            distribution[i] /= link_count;
+        }
+    }
+
+    return;
 }
 
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-/// ======================================================================================== ///
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
 
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
 
-/// ======================================================================================== ///
-/// =================================== Network creation =================================== ///
-/// ======================================================================================== ///
-
+///Create a Erdos-Renyi network with n nodes, mean degree k, and determined by the random seed
 template <class T, typename B>
-void CNetwork<T,B>::create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed)
+void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
 {
     int i,j,k;
-    double p = mean_k / (nodes - 1.0);
+    double p = mean_k / (n - 1.0);
 
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
-    uniform_int_distribution<int>  index(0,nodes-1); //-1 because closed interval for ints
+    uniform_int_distribution<int>  index(0,n-1); //-1 because closed interval for ints
 
-    add_nodes(nodes); //Create the nodes
+    add_nodes(n); //Create the nodes
 
     //For the n (n-1) / 2 pairs, link them with probability p
     for (i=0; i < current_size; i++)
@@ -721,8 +769,9 @@ void CNetwork<T,B>::create_erdos_renyi(int nodes, double mean_k, unsigned int ra
 
 }
 
+///Use the configuration model to create a network with power-law distribution, with n nodes, minimum degree mink, exponent gamma and determined by random_seed
 template <class T, typename B>
-void CNetwork<T,B>::create_configurational(int nodes, int mink, double gamma, unsigned int random_seed)
+void CNetwork<T,B>::create_configurational(int n, int mink, double gamma, unsigned int random_seed)
 {
     int i,j;
     int n_links;
@@ -734,7 +783,7 @@ void CNetwork<T,B>::create_configurational(int nodes, int mink, double gamma, un
     mt19937 gen(random_seed); //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
 
-    add_nodes(nodes); //Add the nodes we need
+    add_nodes(n); //Add the nodes we need
     node_degree = vector<int>(current_size); //Store degree of every node
     max_size = sqrt(current_size); //Max size to avoid correlatons
 
@@ -787,21 +836,22 @@ void CNetwork<T,B>::create_configurational(int nodes, int mink, double gamma, un
 
 }
 
+///Create a small-world Watts Strogatz network with n nodes. Each node will have degree 2 * num_forward_edges in the p=0 regular case. Shuffle with probability p.
 template <class T, typename B>
-void CNetwork<T,B>::create_wats_strogatz(int nodes, int num_forward_edges, double p, unsigned int random_seed)
+void CNetwork<T,B>::create_watts_strogatz(int n, int num_forward_edges, double p, unsigned int random_seed)
 {
     int i,j;
     int to;
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
-    uniform_int_distribution<int>  index(0,nodes-1); //-1 because closed interval for ints
+    uniform_int_distribution<int>  index(0,n-1); //-1 because closed interval for ints
     vector<unsigned int> aux;
     bool eliminated;
 
     ///TODO check for reg_connections = 0, warn the user
 
     //Add the nodes
-    add_nodes(nodes);
+    add_nodes(n);
 
     for (i=0; i < current_size; i++)
     {
@@ -849,9 +899,9 @@ void CNetwork<T,B>::create_wats_strogatz(int nodes, int num_forward_edges, doubl
 }
 
 
-///Creates an Albert-Barabasi free scale network
+///Creates an Albert-Barabasi free scale network with initial m0 nodes, initial m links. The random seed characterizes the network
 template <class T, typename B>
-void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_seed)
+void CNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigned int random_seed)
 {
     int i,j,k,l;
     double r;
@@ -877,7 +927,7 @@ void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_se
     }
 
     //Add then more nodes...
-    for (i = m0; i < max_net_size; i++)
+    for (i = m0; i < n; i++)
     {
         add_nodes(1);
 
@@ -926,20 +976,18 @@ void CNetwork<T,B>::create_albert_barabasi(int m0, int m, unsigned int random_se
     return;
 }
 
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-/// ======================================================================================== ///
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
 
-
-/// ======================================================================================== ///
-/// ===================================== Getting info ===================================== ///
-/// ======================================================================================== ///
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
 
 ///Get the degree of provided index
 template <class T, typename B>
 int CNetwork<T,B>::degree(int node_index)
 {
-    //return degree[node_index];
     return neighs[node_index].size();
 }
 
@@ -1002,15 +1050,6 @@ int CNetwork<T,B>::get_neigh_at(int node_index, int k)
 {
     return neighs[node_index][k];
 }
-/*
-///Returns element of the adjacency matrix, depending if
-///we have selected or not a weighted network
-template <class T, typename B>
-int CNetwork<T,B>::get_a(int i, int j)
-{
-    return weighted_net ? a_w[i][j] : int(a[i][j]);
-}
-*/
 
 ///Set the value of a node
 template <class T, typename B>
@@ -1029,7 +1068,6 @@ T CNetwork<T,B>::get_value(int index)
 
 ///This function creates an standard graphml file format, which is able to store all the data of CNetwork:
 ///nodes, node labels, links and weights.
-
 template <class T, typename B>
 void CNetwork<T,B>::define_property(string name, string type, bool is_for_nodes)
 {
@@ -1390,25 +1428,10 @@ void CNetwork<T,B>::read_mtx(string filename)
     input.close();
 }
 
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-
-
-
-
-/// ======================================================================================== ///
-/// ============================= AUXILIARY FUNCTIONS ====================================== ///
-/// ======================================================================================== ///
-
-
+///Compute dominant eigenvalue and associated eigenvector. Eigenvalue is the last value of the vector returned by this function.
 template <class T, typename B>
 vector<double> CNetwork<T,B>::compute_eigenv(double approx_error, int max_it)
 {
     return adjm.dom_eigen(approx_error, max_it);
 }
 
-
-/// ======================================================================================== ///
-/// ======================================================================================== ///
-/// ======================================================================================== ///
