@@ -86,8 +86,10 @@ class CNetwork
         void write_mtx(string filename);
         void read_mtx(string filename);
 
-        void set_value(int index, T val);
-        T get_value(int index);
+        //void set_value(int index, T val);
+        //T get_value(int index);
+        CNetwork<T> &operator=(const CNetwork<T> &other);
+        T& operator[](const int& i);
 
         CNetwork(int max_size);
 
@@ -157,6 +159,37 @@ void CNetwork<T,B>::clear_network(int max_size)
 
 
     return;
+}
+
+///Asignement operator
+template <class T>
+CNetwork<T> &CNetwork<T>::operator= (const CNetwork<T> &other)
+{
+    weighted_net = other.weighted_net;
+
+    links = other.links;
+    neighs = other.neighs;
+    a = other.a;
+    a_w = other.a_w;
+
+    max_net_size = other.max_net_size;
+    current_size = other.current_size;
+    link_count = other.link_count;
+
+    value = other.value;
+    prop_d = other.prop_d;
+    prop_b = other.prop_b;
+    prop_i = other.prop_i;
+    prop_s = other.prop_s;
+
+    return (*this);
+}
+
+///This operator allows to access the data inside the node
+template <class T>
+T& CNetwork<T>::operator[](const int& i)
+{
+    return value[i];
 }
 
 // ========================================================================================================
@@ -243,10 +276,6 @@ bool CNetwork<T,B>::remove_node(int index)
         {
             adjm.erase(who_to_erase[i]); //Delete all links
             //Index was recorded before, we do 2*who in order to get as even-odd again
-            //links.erase(links.begin() + 2*who_to_erase[i] - 2*i); //-2*i to take in account how list moves
-            //links.erase(links.begin() + 2*who_to_erase[i] - 2*i);  //This will eliminate the 2*i+1 since list moved to left
-            //This uses directly the index
-            //weight.erase(weight.begin() + who_to_erase[i] - i);
         }
 
         link_count -= who_to_erase.size() / 2; //Reduce the number of links
@@ -299,11 +328,7 @@ bool CNetwork<T,B>::remove_link(int from, int to)
         //int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
         int index_link = get_link_index(from, to);
 
-        adjm.erase(index_link);
-
-        //weight.erase(weight.begin() + index_link); //Erase this link weight
-        //links.erase(links.begin()+2*index_link);
-        //links.erase(links.begin()+2*index_link);//Use this last index obtained to erase from link array
+        adjm.erase(index_link); //Delete the link
 
         link_count -= 1;
 
@@ -1051,6 +1076,7 @@ int CNetwork<T,B>::get_neigh_at(int node_index, int k)
     return neighs[node_index][k];
 }
 
+/*
 ///Set the value of a node
 template <class T, typename B>
 void CNetwork<T,B>::set_value(int index, T val)
@@ -1064,6 +1090,7 @@ T CNetwork<T,B>::get_value(int index)
 {
     return value[index];
 }
+*/
 
 
 ///This function creates an standard graphml file format, which is able to store all the data of CNetwork:
