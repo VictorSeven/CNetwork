@@ -4,10 +4,14 @@
 #include<random>
 #include<vector>
 #include<cmath>
-#include<typeinfo>>
+#include<typeinfo>
 
 using namespace std;
 
+/** \brief Data structure for a matrix entry
+*
+* data contains a matrix entry: row, column and value.
+*/
 template<typename T = bool>
 struct data
 {
@@ -17,37 +21,152 @@ struct data
     data() {x=0; y=0; value=NULL;};
 };
 
-
+/** \brief SparseMatrix is a simple class to operate with sparse matrices
+* \author Victor Buendia
+*
+* Sparse is a class to operate efficiently with sparse matrices. It only stores non-zero
+* values. Moreover, it is optimized to make operations only over this non-zero values.
+*
+*/
 template<typename T = bool>
 class SparseMatrix
 {
 public:
 
+
+    /** \brief Default constructor
+    *
+    * Constructs an empty, non-initialized matrix
+    */
     SparseMatrix();
+
+
+    /** \brief Constructor by size
+    * \param msize: number of rows and columns
+    * \param symmetric: whether the matrix is symmetric or not.
+    *
+    * Constructs a square matrix. The class take in account if it is symmetric to perform
+    * optimized algorithms.
+    */
     SparseMatrix(int msize, bool symmetric);
+
+
+    /** \brief Predefined matrices
+    * \param type: a predefined type
+    * \param msize: size of the matrix
+    *
+    * Types: SM_DIAGONAL: defined for double and bool. Identity matrix
+    */
     SparseMatrix(int type, int msize);
 
-    void push_back(data<T> d); //Adds an element
+
+
+    /** \brief Adds an element
+    * \param d: element to add
+    *
+    * Add a new element d at the end of the list
+    */
+    void push_back(data<T> d);
+
+
+
+    /** \brief Erase an element
+    * \param index: index of the element to erase in the list
+    *
+    * Erase the specified element in the list. This function is ~O(n).
+    */
     void erase(int index);
 
+
+    /** \brief Trace of the matrix
+    * \return the trace of the matrix
+    *
+    * Compute trace of the matrix
+    */
     double trace();
 
-    //Multiplication by vectors or matrices
+    /** \brief Matrix-vector multiplication
+    * \param v: vector to multiply with
+    * \return a new vector
+    *
+    * Efficiently performs a matrix-vector multiplication
+    */
     vector<double> operator *(vector<double> &v);
+
+
+    /** \brief Matrix-matrix multiplication
+    * \param s: matrix to multiply with
+    * \return a new matrix<double>
+    *
+    * Efficiently performs a matrix-matrix multiplication. Returned type is always double.
+    */
     template<typename R>
     SparseMatrix<double> operator *(SparseMatrix<R> &s);
-    data<T> operator [](int index);
 
-    //Matrix exponentiation
+
+
+    /** \brief Bracket operator
+    * \param index: index in the list of elements to access
+    * \return reference to the element index in the list
+    *
+    * Access to element index in the list.
+    */
+    data<T> &operator [](const int &index);
+
+    /** \brief Power of a matrix
+    * \param n: exponent
+    * \return matrix powered to the exponent n
+    *
+    * Performs exponentiation of a matrix
+    */
     SparseMatrix<double> pow(int n);
-    //Compute eigenvector
+
+
+
+    /** \brief Largest eigenvalue calculator
+    *  \param epsilon: desired margin of error for the eigenvalue
+    *  \param max_it: limits the number of iterations.
+    *  \return vector that contains the largest eigenvalue (last element) and corresponding eigenvector.
+    *
+    * Computes the largest eigenvalue of the  matrix using a power method. It returns a vector that
+    * has the largest eigenvalue as the last element. The other values are the eigenvector.
+    */
     vector<double> dom_eigen(double epsilon, int max_it);
 
 
-    //Modify private variable msize
+    /** \brief Set the matrix size
+    *  \param msize: new matrix size
+    *
+    * Change matrix dimensions
+    */
     void set_max_size(int msize);
+
+
+
+    /** \brief Get the matrix size
+    *  \return current matrix size
+    *
+    * Change matrix dimensions
+    */
     int get_max_size();
+
+
+
+    /** \brief Get the number of elements
+    *  \return number of non-zero elements
+    *
+    * Returns the number of non-zero elements in the matrix.
+    */
     int get_number_elements();
+
+
+    /** \brief Assignement operator
+    *  \param other: matrix to assign
+    *  \return the matrix other
+    *
+    * Allow the user to use the assignement operator
+    */
+    SparseMatrix<T> &operator=(const SparseMatrix<T> &other);
 
     static const int SM_DIAGONAL = 0;
 
@@ -75,6 +194,13 @@ SparseMatrix<T>::SparseMatrix()
     ;
 }
 
+template<typename T>
+SparseMatrix<T> &SparseMatrix<T>::operator=(const SparseMatrix<T> &other)
+{
+    m_dim = other.m_dim;
+    is_symmetric = other.is_symmetric;
+    m = other.m;
+}
 
 
 template<typename T>
@@ -112,6 +238,8 @@ void SparseMatrix<T>::push_back(data<T> d)
 template<typename T>
 void SparseMatrix<T>::erase(int index)
 {
+    //m[index] = m[m.size() - 1]; //Overwrite the one we want to delete
+    //m.pop_back(); //Pop back last
     m.erase(m.begin() + index);
 }
 
@@ -332,7 +460,7 @@ double SparseMatrix<T>::trace()
 }
 
 template<typename T>
-data<T> SparseMatrix<T>::operator [](int index)
+data<T> &SparseMatrix<T>::operator [](const int &index)
 {
     return m[index];
 }

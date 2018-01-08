@@ -10,11 +10,6 @@
 
 #include "SparseMatrix.cpp"
 
-#define MAX_SIZE 1000000
-#define IN 0
-#define OUT 1
-
-
 using namespace std;
 
 /* =======================================================================================================
@@ -31,86 +26,473 @@ Please follow license terms when using this code.
 // ========================================================================================================
 
 
-///CNetwork<class, type> base class.
-template <class T = bool, typename B = bool>
+/** \brief CNetwork base class
+*  \author Victor Buendia
+*
+*   CNetwork is the core class for a weighted, undirected network.
+*   Needs two template arguments: class associated to nodes and links
+*
+*/
+template <class T = bool, class B = bool>
 class CNetwork
 {
     public:
 
+        /** \brief Add new nodes to the network
+        *  \param n: number of nodes to add
+        *
+        * Add new nodes to the network
+        */
         void add_nodes(int n);
-        bool remove_node(int index);
-        void add_link(int from, int to);
-        void add_link(int from, int to, B w);
-        bool remove_link(int from, int to);
-        void create_adjacency_matrix();
 
+
+        /** \brief Remove a node from the network
+        *  \param index: index of the node to remove
+        *
+        * Remove the selected node from the network. All links related to this node will be erased.
+        */
+        bool remove_node(int index);
+
+
+        /** \brief Add a link to the network
+        *  \param from: index of the origin node
+        *  \param to: index of the target node
+        *
+        * Adds a link from the nodes from and to
+        */
+        void add_link(int from, int to);
+
+        /** \brief Add a link to the network
+        *  \param from: index of the origin node
+        *  \param to: index of the target node
+        *  \param w: weight of the link.
+        *
+        * Add a weighted link between nodes from and to
+        */
+        void add_link(int from, int to, B w);
+
+        /** \brief Remove a link from the network
+        *  \param from: Index of the origin node
+        *  \param to: Index of the target node
+        *  \return false if there is no link between from and to.
+        *
+        * Remove the a link between nodes from and to, if it exist.
+        */
+        bool remove_link(int from, int to);
+
+
+        /** \brief Compute mean degree of the network
+        *  \return Mean degree
+        *
+        * Computes the mean degree of the network
+        */
         double mean_degree();
+
+        /** \brief Computes the clustering coefficient of a node
+        *  \param index: target node
+        *  \return clustering coefficient of target node
+        *
+        * Compute a clustering coefficient of a target node.
+        */
         double clustering_coef(int node_index);
+
+        /** \brief Computes verage clustering coefficient
+        *  \return clustering coefficient of the network
+        *
+        * Computes the clustering coefficient of each element, and takes the average.
+        * It is not the same as the one computed counting triangles.
+        */
         double mean_clustering_coef();
+
+        /** \brief Performs a BFS from the selected node
+        *  \param node: index of the target node
+        *  \param[out] node_indices: contains unsorted indices of the nodes in network
+        *  \param[out] dist: element j is the distance to node_indices[j]
+        *
+        *  Computes a BFS using the algorithm given in Newman's book. Returns the distance to all
+        *  the nodes in the network from the target node. Distances are unsorted, so an auxiliar
+        *  vector is provided. dist[j] is distance to node_indices[j]
+        */
         void breadth_first_search(int node, vector<int> &node_indices, vector<int> &dist);
+
+        /** \brief Computes the nodes in the same component as target
+        *  \param index: target node
+        *  \param[out] list_nodes: indices of nodes in the same component as target
+        *  \param comp_size: optional. If component size is known before hand, it speeds up the method.
+        *
+        * Use BFS to see which nodes are in the same network component than me. If the size of the component
+        * is known beforehand, it can be given to the algorithm to make it faster.
+        */
         void component_nodes(int index, vector<int> &list_nodes, int comp_size = -1);
+
+        /** \brief Finds all not-connected components of network and computes the sizes
+        *  \param[out] node_in_this_component: each component j is represented by a node index j.
+        *  \param[out] size_of_components: element j of this list contains size of component j
+        *
+        * Use BFS to find all network components. Each component, j, is represented by its size, and by
+        * a node that is inside the component. This node can be used to recover the full component with
+        * component_nodes, if needed.
+        */
         void component_size(vector<int> &node_in_this_component, vector<int> &size_of_components);
+
+        /** \brief Computes the component with largest size, and return it
+        *  \return size of the largest component
+        *
+        * Use BFS to compute component of network with largest size
+        */
         int largest_component_size();
+
+        /** \brief Computes the degree distribution of the network
+        *  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
+        *  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
+        *
+        * Compute the degree distribution of the network. If you also need the correlations, please use instead degree_correlation.
+        */
         void degree_distribution(vector<int> &distribution, bool normalized = false);
+
+        /** \brief Computes the degree distribution and correlations
+        *  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
+        *  \param[out] correlation: index j contains average degree of neighbours of a node with degree j
+        *  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
+        *
+        * Computes the average number of neighbours that a node with degree j has. It also computes and stores the degree distribution,
+        * since both quantities are usually needed.
+        */
         void degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized = false);
+
+
+        /** \brief Computes the average pathlenght of the network
+        *  \return pathlenght of the network.
+        *
+        * Uses BFS to compute the average pathlenght of the complete network (even if it is disconnected). To compute
+        * pathlenght of single network component, use average_pathlenght_component instead
+        */
         double average_pathlenght();
+
+
+        /** \brief Computes the average pathlenght of a component
+        *  \param cmponent_index: index of a node that belongs to the desired component
+        *  \param comp_size: optional. Size of the desired component
+        *
+        * Uses BFS to compute the average pathlenght of a component, that is selected via the index of a node that belongs
+        * to the component. If size of the component is known beforehand, it speeds up the computations
+        */
         double average_pathlenght_component(int component_index, int comp_size = -1);
 
-        void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed);
+
+        /** \brief Generates an Albert-Barabasi network
+        *  \param n: nodes of the network
+        *  \param m0: initial number of fully-connected nodes
+        *  \param m: new links added for each node
+        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
+        *
+        * Generates an Albert-Barabasi network based in the algorithm given by Newman. The random seed should be
+        * specified for obtaining different networks each iteration.
+        */
+        void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed = 123456789);
+
+        /** \brief Generates a scale-free network using the configurational model
+        *  \param nodes: nodes of the network
+        *  \param kmin: minimum degree of each node
+        *  \param gamma: exponent of power law
+        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
+        *
+        * Generates a scale free network based using the configuration model. The random seed should be
+        * specified for obtaining different networks each iteration.
+        */
         void create_configurational(int nodes, int kmin, double gamma, unsigned int random_seed);
+
+
+        /** \brief Generates a Watts-Strogatz network
+        *  \param nodes: nodes of the network
+        *  \param regular_connections: degree of each node in the case p=0
+        *  \param p: probability of shuffling edges
+        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
+        *
+        * Generates a Watts-Strogatz network. In the case of a completely regular network (p=0), each node
+        * has regular_connections edges. The random seed should be specified for obtaining different networks each iteration.
+        */
         void create_watts_strogatz(int nodes, int regular_connections, double p, unsigned int random_seed);
+
+
+        /** \brief Generates a random Erdos-Renyi network
+        *  \param nodes: nodes of the network
+        *  \param mean_k: average degree
+        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
+        *
+        * Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration.
+        */
         void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed);
 
+
+        /** \brief Gets the degree of the target node
+        *  \param node_index: target node
+        *  \return degree of target node
+        *
+        * Returns the degree of the target node
+        */
         int degree(int node_index);
+
+
+        /** \brief Gets a link by its index
+        *  \param link_index: index of target link
+        *  \return vector containing origin and target node indices
+        *
+        * Returns a vector (node_origin, node_destination) given the link index
+        */
         vector<int> get_link(int link_index);
+
+
+        /** \brief Gets a link weight
+        *  \param link_index: index of target link
+        *  \return link weight
+        *
+        * Returns the object ("weight") associated with the specified link
+        */
         B get_weight(int link_index);
+
+        /** \brief Gets a link between two specified nodes
+        *  \param from: origin node
+        *  \param to: destination node
+        *  \return index of the link between from and destination.
+        *
+        * Returns the index of the link that connects nodes from and to. If there is no link, then
+        * it returns -1.
+        */
         int get_link_index(int from, int to);
+
+
+        /** \brief Total number of nodes in the network
+        *  \return number of nodes in the network
+        *
+        * Returns the total number of nodes initialized in the network
+        */
         int get_node_count();
+
+
+        /** \brief Total number of links in the network
+        *  \return number of links in the network
+        *
+        * Returns the total number of links initialized in the network
+        */
         int get_link_count();
+
+
+        /** \brief Get the neighbours of a given node
+        *  \param node_index: target node
+        *  \return vector containing the indices of the neighbour nodes of the target node
+        *
+        * Returns the a vector with the indices of the neighbours of the specified node.
+        */
         vector<unsigned int> get_neighs(int node_index);
+
+
+        /** \brief Selects a neighbour of a given node
+        *  \param node_index: target node
+        *  \param k: neighbour to be selected
+        *  \return index of the k-th neighbour of the target node
+        *
+        * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
+        */
         int get_neigh_at(int node_index, int k);
 
 
+        /** \brief Define a new tag for the network
+        *  \param name: tag identifier
+        *  \param type: can be int, double, string, or bool.
+        *  \param is_for_nodes: if false, this property is assigned to links
+        *
+        * Define a new property or tag. This will be exported to GraphML. It can
+        * be used also as additional properties for network dynamics.
+        */
         void define_property(string name, string type, bool is_for_nodes);
+
+
+        /** \brief Set the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \param value: the new value
+        *
+        * Set a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         void set_value(string name, int index, double value);
+
+
+        /** \brief Set the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \param value: the new value
+        *
+        * Set a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         void set_value(string name, int index,  int value);
+
+
+        /** \brief Set the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \param value: the new value
+        *
+        * Set a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         void set_value(string name, int index,  bool value);
+
+
+        /** \brief Set the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \param value: the new value
+        *
+        * Set a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         void set_value(string name, int index,  string value);
+
+
+
+        /** \brief Get the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \return value stored
+        *
+        * Get a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         double get_value_d(string name, int index);
+
+
+        /** \brief Get the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \return value stored
+        *
+        * Get a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         int get_value_i(string name, int index);
+
+
+
+        /** \brief Get the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \return value stored
+        *
+        * Get a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         bool get_value_b(string name, int index);
+
+
+
+        /** \brief Get the value of an existing property
+        *  \param name: tag identifier
+        *  \param index: index or node or link where it has to be stored
+        *  \return value stored
+        *
+        * Get a value for the property "name" in the node or link index. Note that
+        * user must take care of manually checking index bounds.
+        */
         string get_value_s(string name, int index);
 
 
+
+        /** \brief Export network data to GraphML, Gephi compatible format
+        *  \param filename: name of the file (without extension)
+        *  \param labels: optional. Tags used to name the nodes
+        *
+        * Export the network data. Properties defined via define_property will be stored as node or link
+        * properties. In addition to that, it is also possible to label directly the nodes. This will be
+        * recognized as a node identifier in software like Gephi. For compatibility, MTX format is preferred
+        */
         void write_graphml(string filename, vector<string> labels = vector<string>());
+
+
+
+        /** \brief Export network data to plain MTX format
+        *  \param filename: name of the file (without extension)
+        *
+        * The MTX format is defined by a simple plaintext representation of the adjancency matrix.
+        * This is compatible with most network-analysis software, and it is easy to read from any language.
+        */
         void write_mtx(string filename);
+
+
+
+        /** \brief Read network data from plain MTX format
+        *  \param filename: name of the file (including extension)
+        *
+        * The MTX format is defined by a simple plaintext representation of the adjancency matrix.
+        * This function reads any MTX-like format
+        */
         void read_mtx(string filename);
 
-        //void set_value(int index, T val);
-        //T get_value(int index);
-        CNetwork<T> &operator=(const CNetwork<T> &other);
+
+        /** \brief Assignement operator
+        *  \param other: another CNetwork of the same type
+        *  \return CNetwork
+        *
+        * Assigns a network to another.
+        */
+        CNetwork<T,B> &operator=(const CNetwork<T,B> &other);
+
+
+        /** \brief Bracket operator
+        *  \param i: index
+        *  \return reference to the value stored in i-th node
+        *
+        * Access the value stored in the i-th node.
+        */
         T& operator[](const int& i);
 
+
+
+        /** \brief CNetwork standard constructor
+        *  \param max_size: maximum size of the network
+        *
+        * Creates a new CNetwork with a limit to the number of nodes. The maximum is fixed and
+        * the memory for the nodes is not allocated.
+        */
         CNetwork(int max_size);
 
+
+
+        /** \brief Largest eigenvalue calculator
+        *  \param approx_error: desired margin of error for the eigenvalue
+        *  \param max_it: optional. Limits the number of iterations. Default: 20
+        *  \return vector that contains the largest eigenvalue (last element) and corresponding eigenvector.
+        *
+        * Computes the largest eigenvalue of the adjacency matrix using a power method. It returns a vector that
+        * has the largest eigenvalue as the last element. The other values are the eigenvector.
+        */
         vector<double> compute_eigenv(double approx_error, int max_it = 20);
+
+
+
+        /** \brief Delete all the data stored by the network
+        *  \param max_size: maximum size of the network
+        *
+        * Delete everything stored by the network.
+        */
+        void clear_network();
+
 
         SparseMatrix<B> adjm;
 
+
     private:
-        void clear_network(int max_size);
+
 
         int max_net_size;
         int current_size;
         int link_count;
 
-
-
-
         vector< vector<unsigned int> > neighs;
 
         vector<T> value;
-
 
         map<string, vector<double> > prop_d;
         map<string, vector<int> > prop_i;
@@ -129,23 +511,21 @@ class CNetwork
 
 
 
-///Create a network with a maximum number of nodes max_size
 template <class T, typename B>
 CNetwork<T,B>::CNetwork(int max_size)
 {
-    clear_network(max_size);
+    max_net_size = max_size; //Set the max size of the network
+    clear_network(); //Initialize everything
     return;
 }
 
-///Delete all the information stored an inits a new network
 template <class T, typename B>
-void CNetwork<T,B>::clear_network(int max_size)
+void CNetwork<T,B>::clear_network()
 {
     current_size = 0; //Init size to 0
-    max_net_size = max_size; //Set the max size of the network
     link_count = 0; //Init link count
     //Create vectors in order to add things
-    adjm = SparseMatrix<B>(max_size, true);
+    adjm = SparseMatrix<B>(max_net_size, true);
 
     neighs = vector< vector<unsigned int> >(0, vector<unsigned int>(0));
 
@@ -161,16 +541,10 @@ void CNetwork<T,B>::clear_network(int max_size)
     return;
 }
 
-///Asignement operator
-template <class T>
-CNetwork<T> &CNetwork<T>::operator= (const CNetwork<T> &other)
+template <class T, typename B>
+CNetwork<T,B> &CNetwork<T,B>::operator= (const CNetwork<T,B> &other)
 {
-    weighted_net = other.weighted_net;
-
-    links = other.links;
-    neighs = other.neighs;
-    a = other.a;
-    a_w = other.a_w;
+    adjm = other.adjm;
 
     max_net_size = other.max_net_size;
     current_size = other.current_size;
@@ -185,9 +559,8 @@ CNetwork<T> &CNetwork<T>::operator= (const CNetwork<T> &other)
     return (*this);
 }
 
-///This operator allows to access the data inside the node
-template <class T>
-T& CNetwork<T>::operator[](const int& i)
+template <class T, typename B>
+T& CNetwork<T,B>::operator[](const int& i)
 {
     return value[i];
 }
@@ -197,9 +570,6 @@ T& CNetwork<T>::operator[](const int& i)
 // ========================================================================================================
 
 
-
-
-///Add n nodes to the network
 template <class T, typename B>
 void CNetwork<T,B>::add_nodes(int n)
 {
@@ -218,7 +588,6 @@ void CNetwork<T,B>::add_nodes(int n)
     return;
 }
 
-///Remove the node labeled by index
 template <class T, typename B>
 bool CNetwork<T,B>::remove_node(int index)
 {
@@ -287,7 +656,6 @@ bool CNetwork<T,B>::remove_node(int index)
     else return false;
 }
 
-///Create a link between nodes from and to
 template <class T, typename B>
 void CNetwork<T,B>::add_link(int from, int to)
 {
@@ -300,7 +668,6 @@ void CNetwork<T,B>::add_link(int from, int to)
     return;
 }
 
-///Create a link between nodes from and to and weight w
 template <class T, typename B>
 void CNetwork<T,B>::add_link(int from, int to, B w)
 {
@@ -314,7 +681,6 @@ void CNetwork<T,B>::add_link(int from, int to, B w)
     return;
 }
 
-///Remove a link between from and to
 template <class T, typename B>
 bool CNetwork<T,B>::remove_link(int from, int to)
 {
@@ -350,16 +716,12 @@ bool CNetwork<T,B>::remove_link(int from, int to)
 }
 
 
-
-
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
 
 
 
-
-///Compute the mean degree of the network and returns it
 template <class T, typename B>
 double CNetwork<T,B>::mean_degree()
 {
@@ -375,8 +737,6 @@ double CNetwork<T,B>::mean_degree()
     return sum / (current_size * 1.0);
 }
 
-
-///Computes the clustering coefficient of a particular node
 template <class T, typename B>
 double CNetwork<T,B>::clustering_coef(int node_index)
 {
@@ -412,7 +772,7 @@ double CNetwork<T,B>::clustering_coef(int node_index)
 
 }
 
-///Computes the average clustering coefficient of the network
+
 template <class T, typename B>
 double CNetwork<T,B>::mean_clustering_coef()
 {
@@ -429,8 +789,6 @@ double CNetwork<T,B>::mean_clustering_coef()
 }
 
 
-///Find distance from node to every node in the network using Newman's algorithm.
-///Returns: dist[j] has the distance to node_indices[j]. It is -1 if could not reach it.
 template <class T, typename B>
 void CNetwork<T,B>::breadth_first_search(int node, vector<int> &node_indices, vector<int> &dist)
 {
@@ -475,7 +833,6 @@ void CNetwork<T,B>::breadth_first_search(int node, vector<int> &node_indices, ve
 }
 
 
-///Gets the indices of the nodes that are in the same component that index. If the component size is known beforehand, performs better.
 template <class T, typename B>
 void CNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, int comp_size)
 {
@@ -492,15 +849,26 @@ void CNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, int comp
 
         breadth_first_search(index, node_list, dist); //Use this to get all the nodes in my component
 
+        i = 0; //Counter for every node
         j = 0;
-        for (i = 0; i < current_size; i++)
+        //j is the number of nodes in the component. If we reach the known number comp_size, stop looking for more
+        while (j < comp_size)
         {
             if (dist[i] >= 0)
             {
                 list_nodes[j] = i;
                 j++;
             }
+            i++;
         }
+        /*for (i = 0; i < current_size; i++)
+        {
+            if (dist[i] >= 0)
+            {
+                list_nodes[j] = i;
+                j++;
+            }
+        }*/
     }
     //If not, declare vectors and push_back the elements.
     else
@@ -525,8 +893,6 @@ void CNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, int comp
 }
 
 
-///Use the breadth first search to get size of all network components.
-///Returns: node_in_this_component[j] has the index of a single node inside component j. size_of_components[j] has the size of component j.
 template <class T, typename B>
 void CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components)
 {
@@ -577,7 +943,6 @@ void CNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<i
     return;
 }
 
-///Compute the size of the largest component.
 template <class T, typename B>
 int CNetwork<T,B>::largest_component_size()
 {
@@ -594,7 +959,6 @@ int CNetwork<T,B>::largest_component_size()
 }
 
 
-///Computes the average path length of the whole network
 template <class T, typename B>
 double CNetwork<T,B>::average_pathlenght()
 {
@@ -627,7 +991,6 @@ double CNetwork<T,B>::average_pathlenght()
 }
 
 
-///Computes the average pathlenght inside the component. To component is selected via the index of a node inside the component.
 template <class T, typename B>
 double CNetwork<T,B>::average_pathlenght_component(int component_index, int comp_size)
 {
@@ -668,7 +1031,6 @@ double CNetwork<T,B>::average_pathlenght_component(int component_index, int comp
 
 
 
-///Computes the degree distribution of the network and stores it in the distribution vector. Optional argument allows to normalize the distribution
 template <class T, typename B>
 void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normalized)
 {
@@ -700,7 +1062,6 @@ void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normaliz
     return;
 }
 
-///Compute the degree correlation (also return degree distribution). Optional argument allows to normalize degree distribution.
 template <class T, typename B>
 void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized)
 {
@@ -765,7 +1126,6 @@ void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double>
 // ========================================================================================================
 // ========================================================================================================
 
-///Create a Erdos-Renyi network with n nodes, mean degree k, and determined by the random seed
 template <class T, typename B>
 void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
 {
@@ -794,7 +1154,6 @@ void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random
 
 }
 
-///Use the configuration model to create a network with power-law distribution, with n nodes, minimum degree mink, exponent gamma and determined by random_seed
 template <class T, typename B>
 void CNetwork<T,B>::create_configurational(int n, int mink, double gamma, unsigned int random_seed)
 {
@@ -861,7 +1220,6 @@ void CNetwork<T,B>::create_configurational(int n, int mink, double gamma, unsign
 
 }
 
-///Create a small-world Watts Strogatz network with n nodes. Each node will have degree 2 * num_forward_edges in the p=0 regular case. Shuffle with probability p.
 template <class T, typename B>
 void CNetwork<T,B>::create_watts_strogatz(int n, int num_forward_edges, double p, unsigned int random_seed)
 {
@@ -873,6 +1231,8 @@ void CNetwork<T,B>::create_watts_strogatz(int n, int num_forward_edges, double p
     vector<unsigned int> aux;
     bool eliminated;
 
+
+    clear_network();
     ///TODO check for reg_connections = 0, warn the user
 
     //Add the nodes
@@ -882,49 +1242,25 @@ void CNetwork<T,B>::create_watts_strogatz(int n, int num_forward_edges, double p
     {
         for (j=1; j <= num_forward_edges; j++) //At least one node.
         {
-            add_link(i, (i+j)%current_size); //Add the link
-        }
-    }
-
-
-    //To avoid erasing inside the loop which may cause problems with indices
-    vector<int> who_to_erase = vector<int>(0);
-    vector<int> who_to_erase_index = vector<int>(0);
-
-    for (i=0; i < current_size; i++) //To -1 because the last is already connected to the first
-    {
-        //Select the nodes pointed by the edges, using that we know number of edges
-        for (j = num_forward_edges; j < 2 * num_forward_edges; j++)
-        {
-            //If selected, add to the list of rewiring
-            if (ran_u(gen) <= p)
+            if (ran_u(gen) > p) add_link(i, (i+j)%current_size); //Add the link
+            else
             {
-                who_to_erase.push_back(i); //Add the node from
-                who_to_erase_index.push_back(get_neigh_at(i,j)); //Add node to
+                do
+                {
+                    to = index(gen); //Get a new neighbour
+                    aux = get_neighs(i);
+                }
+                //Do it again if I selected exactly the same node, or if it is myself
+                while (to == i && find(aux.begin(), aux.end(), to) != aux.end());
+                add_link(i, to);
             }
         }
-    }
-
-    //Now effectively rewire the links
-    for (i=0; i < who_to_erase.size(); i++)
-    {
-        eliminated = remove_link(who_to_erase[i], who_to_erase_index[i]); //Try to remove the link
-        do
-        {
-            to = index(gen); //Get a new neighbour
-            aux = get_neighs(to); //Check neighs of this new neigh
-        }
-        //Do it again if I selected exactly the same node, or if it is myself
-        while (to == who_to_erase[i] or to == who_to_erase_index[i] or (find(aux.begin(), aux.end(), who_to_erase[i]) != aux.end()) );
-
-        if (eliminated) add_link(who_to_erase[i], to); //Add the new link
     }
 
     return;
 }
 
 
-///Creates an Albert-Barabasi free scale network with initial m0 nodes, initial m links. The random seed characterizes the network
 template <class T, typename B>
 void CNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigned int random_seed)
 {
@@ -967,8 +1303,6 @@ void CNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigned int ra
                 //With half probability, add it to highly connected node, selecting randomly an edge.
                 index = uniform_int_distribution<int>(0, link_count-1);//-1 because interval is closed
                 index_add = adjm[index(gen)].y;
-                //add_link(current_size-1, links[2*index(gen)+1]); //Current_size-1 because we've added a node we don't have to account for; BEFORE WAS [index][OUT]
-                //add_link(current_size-1, index_add);
 
             }
             else
@@ -976,7 +1310,6 @@ void CNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigned int ra
                 //If not, connect to a random node
                 index = uniform_int_distribution<int>(0, current_size-2); //We don't want current_size-1 which is the actual node, so up to -2
                 index_add = index(gen);
-                //add_link(current_size-1, index_add); //Add the link
             }
 
             //Check there that we don't have still a link between the two...
@@ -1009,7 +1342,6 @@ void CNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigned int ra
 // ========================================================================================================
 // ========================================================================================================
 
-///Get the degree of provided index
 template <class T, typename B>
 int CNetwork<T,B>::degree(int node_index)
 {
@@ -1017,7 +1349,6 @@ int CNetwork<T,B>::degree(int node_index)
 }
 
 
-///Get the degree of provided index
 template <class T, typename B>
 int CNetwork<T,B>::get_link_index(int from, int to)
 {
@@ -1034,67 +1365,42 @@ int CNetwork<T,B>::get_link_index(int from, int to)
     return found ? i-1 : -1; //Remember we have just summed i
 }
 
-///Returns the link in format (from, to) as a two-component vector
 template <class T, typename B>
 vector<int> CNetwork<T,B>::get_link(int link_index)
 {
     return {adjm[link_index].x, adjm[link_index].y};
 }
 
-///Get the weight
 template <class T, typename B>
 B CNetwork<T,B>::get_weight(int link_index)
 {
     return adjm[link_index].value;
 }
 
-///Get how many nodes we have
 template <class T, typename B>
 int CNetwork<T,B>::get_node_count()
 {
     return current_size;
 }
 
-///Get how many links we have
 template <class T, typename B>
 int CNetwork<T,B>::get_link_count()
 {
     return link_count;
 }
 
-///Returns a vector of neighbors of node_index
 template <class T, typename B>
 vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index)
 {
     return neighs[node_index];
 }
 
-///Get the k neighbour of the node node_index
 template <class T, typename B>
 int CNetwork<T,B>::get_neigh_at(int node_index, int k)
 {
     return neighs[node_index][k];
 }
 
-/*
-///Set the value of a node
-template <class T, typename B>
-void CNetwork<T,B>::set_value(int index, T val)
-{
-    value[index] = val;
-}
-
-///Get the value of a node
-template <class T, typename B>
-T CNetwork<T,B>::get_value(int index)
-{
-    return value[index];
-}
-*/
-
-
-///This function creates an standard graphml file format, which is able to store all the data of CNetwork:
-///nodes, node labels, links and weights.
 template <class T, typename B>
 void CNetwork<T,B>::define_property(string name, string type, bool is_for_nodes)
 {
@@ -1119,7 +1425,6 @@ void CNetwork<T,B>::define_property(string name, string type, bool is_for_nodes)
     return;
 }
 
-///Following functions are overloads to set the value of a property
 template <class T, typename B>
 void CNetwork<T,B>::set_value(string name, int index, double value)
 {
@@ -1140,8 +1445,6 @@ void CNetwork<T,B>::set_value(string name, int index, string value)
 {
     prop_s[name][index] = value;
 }
-
-///Following functions are used to retrieve value from the properties
 
 template <class T, typename B>
 double CNetwork<T,B>::get_value_d(string name, int index)
@@ -1164,8 +1467,6 @@ string CNetwork<T,B>::get_value_s(string name, int index)
     return prop_s[name][index];
 }
 
-
-///Used to write the network as a GRAPHML file. Optional argument labels is useful to name the nodes.
 
 template <class T, typename B>
 void CNetwork<T,B>::write_graphml(string filename, vector<string> labels)
@@ -1378,7 +1679,6 @@ void CNetwork<T,B>::write_graphml(string filename, vector<string> labels)
     output.close();
 }
 
-///Write the mtx format
 template <class T, typename B>
 void CNetwork<T,B>::write_mtx(string filename)
 {
@@ -1387,6 +1687,7 @@ void CNetwork<T,B>::write_mtx(string filename)
 
     output.open(filename + ".mtx");
     //Write that this is a NxN matrix with link_count links
+    output << "%Network created using CNetwork 1.0" << endl;
     output << current_size << " " << current_size << " " << link_count << endl;
     //Check if the used decided to use a weighted net
     if (typeid(B) == typeid(bool))
@@ -1455,7 +1756,6 @@ void CNetwork<T,B>::read_mtx(string filename)
     input.close();
 }
 
-///Compute dominant eigenvalue and associated eigenvector. Eigenvalue is the last value of the vector returned by this function.
 template <class T, typename B>
 vector<double> CNetwork<T,B>::compute_eigenv(double approx_error, int max_it)
 {

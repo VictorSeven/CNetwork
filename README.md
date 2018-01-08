@@ -1,18 +1,18 @@
 # CNetwork
 
 
-**CNetwork is a simple C++ class used to do network analysis.** The aim of this class is to have a single .cpp file which can be imported in any project, **without having to compile any source code.** The code runs moderately fast and allows the user to do analysis with networks of decent sizes (~10<sup>6</sup>). 
+**CNetwork is a simple C++ class used to do network analysis and dynamics.** The aim of this class is to have a single .cpp file which can be imported in any project, **without having to compile separately any source code.** The code runs moderately fast and allows the user to do analysis with networks of decent sizes (~10<sup>6</sup>). 
 
-Although is not as complete as other libraries, such as NetworkX or igraph, it is faster than NetworkX (see benchmark below) and it is easier to code than igraph for C++. 
+Although it is not as complete as other libraries, such as NetworkX or igraph, it is faster than NetworkX (see benchmark below) and it is easier to code than igraph for C++. 
 This makes CNetwork a good choice for making simple, fast code for network analysis.
 
 Main features:
 
-- Functions to create well-known network models, such as Erdos-Renyi, Watts-Strogatz, Barabási-Albert or any scale-free distribution using the configuration model.
+- Functions to create well-known network models, such as Erdos-Renyi, Watts-Strogatz, Barabási-Albert, lattices, or any scale-free distribution using the configuration model.
 - Functions to manually add or remove nodes and links, as well as accessing them. 
-- Get node properties, such as degree, clustering, or distance between nodes.
--  Import mtx format.
 - Allows to have custom node properties to run dynamics over networks. 
+- Get node properties, such as degree, clustering, or distance between nodes.
+- Import simple mtx format.
 - Export your network to Graphml / Gephi compatible format to visualize it. It is possible to define custom tags or properties such as color or position.
 
 ## An example of implementation
@@ -61,7 +61,7 @@ The code above only needs **1.953** seconds (less than 2s!) to run on a moderate
 
     %timeit nx.barabasi_albert_graph(1000000, 2, 5464531) 
 
-gives 16.1 seconds. Saving the network into a variable a computing its Laplacian, 
+gives 16.1 seconds. Saving the network into a variable and computing its Laplacian, 
 
     %timeit nx.normalized_laplacian_matrix(barabasi)
 
