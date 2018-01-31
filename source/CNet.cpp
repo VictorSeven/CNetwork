@@ -24,166 +24,37 @@ template <class T = bool, class B = bool>
 class CNetwork: public DirectedCNetwork<T,B>
 {
     public:
-        /** \brief Remove a node from the network
-        *  \param index: index of the node to remove
-        *
-        * Remove the selected node from the network. All links related to this node will be erased.
-        */
+
         bool remove_node(int index);
-
-
-        /** \brief Add a link to the network
-        *  \param from: index of the origin node
-        *  \param to: index of the target node
-        *
-        * Adds a link from the nodes from and to
-        */
         void add_link(int from, int to);
-
-        /** \brief Add a link to the network
-        *  \param from: index of the origin node
-        *  \param to: index of the target node
-        *  \param w: weight of the link.
-        *
-        * Add a weighted link between nodes from and to
-        */
         void add_link(int from, int to, B w);
-
-        /** \brief Remove a link from the network
-        *  \param from: Index of the origin node
-        *  \param to: Index of the target node
-        *  \return false if there is no link between from and to.
-        *
-        * Remove the a link between nodes from and to, if it exist.
-        */
         bool remove_link(int from, int to);
 
 
-        /** \brief Compute mean degree of the network
-        *  \return Mean degree
-        *
-        * Computes the mean degree of the network
-        */
         double mean_degree();
 
-        /** \brief Computes the clustering coefficient of a node
-        *  \param index: target node
-        *  \return clustering coefficient of target node
-        *
-        * Compute a clustering coefficient of a target node.
-        */
-        double clustering_coef(int node_index);
 
-        /** \brief Computes verage clustering coefficient
-        *  \return clustering coefficient of the network
-        *
-        * Computes the clustering coefficient of each element, and takes the average.
-        * It is not the same as the one computed counting triangles.
-        */
+        double clustering_coef(int node_index);
         double mean_clustering_coef();
 
 
-        /** \brief Computes the degree distribution of the network
-        *  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
-        *  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
-        *
-        * Compute the degree distribution of the network. If you also need the correlations, please use instead degree_correlation.
-        */
         void degree_distribution(vector<int> &distribution, bool normalized = false);
-
-        /** \brief Computes the degree distribution and correlations
-        *  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
-        *  \param[out] correlation: index j contains average degree of neighbours of a node with degree j
-        *  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
-        *
-        * Computes the average number of neighbours that a node with degree j has. It also computes and stores the degree distribution,
-        * since both quantities are usually needed.
-        */
         void degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized = false);
 
 
-        /** \brief Gets the in-degree of the target node
-        *  \param node_index: target node
-        *  \return in-degree of target node
-        *
-        * Returns the in-degree of the target node
-        */
         int in_degree(int node_index);
-
-
-        /** \brief Gets the out-degree of the target node
-        *  \param node_index: target node
-        *  \return out-degree of target node
-        *
-        * Returns the out-degree of the target node
-        */
         int out_degree(int node_index);
-
-
-        /** \brief Gets the degree of the target node
-        *  \param node_index: target node
-        *  \return degree of target node
-        *
-        * Returns the degree of the target node
-        */
         int degree(int node_index);
 
 
-        /** \brief Gets a link between two specified nodes
-        *  \param from: origin node
-        *  \param to: destination node
-        *  \return index of the link between from and destination.
-        *
-        * Returns the index of the link that connects nodes from and to. If there is no link, then
-        * it returns -1.
-        */
         int get_link_index(int from, int to);
 
 
-        /** \brief Get the neighbours of a given node
-        *  \param node_index: target node
-        *  \return vector containing the indices of the neighbour nodes of the target node
-        *
-        * Returns the a vector with the indices of the neighbours of the specified node.
-        */
         vector<unsigned int> get_neighs(int node_index);
-
-
-        /** \brief Selects a neighbour of a given node
-        *  \param node_index: target node
-        *  \param k: neighbour to be selected
-        *  \return index of the k-th neighbour of the target node
-        *
-        * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
-        */
         int get_neigh_at(int node_index, int k);
 
-        /*
-        /** \brief Assignement operator
-        *  \param other: another CNetwork of the same type
-        *  \return CNetwork
-        *
-        * Assigns a network to another.
-        */
-        //CNetwork<T,B> &operator=(const CNetwork<T,B> &other);
-
-
-
-
-        /** \brief CNetwork standard constructor
-        *  \param max_size: maximum size of the network
-        *
-        * Creates a new CNetwork with a limit to the number of nodes. The maximum is fixed and
-        * the memory for the nodes is not allocated.
-        */
         CNetwork(int max_size);
 
-
-        /** \brief Delete all the data stored by the network
-        *  \param max_size: maximum size of the network
-        *
-        * Delete everything stored by the network.
-        */
         void clear_network();
 
 
@@ -203,8 +74,12 @@ using WCNd = CNetwork<double, double>;
 // ========================================================================================================
 // ========================================================================================================
 
-
-
+/** \brief CNetwork standard constructor
+*  \param max_size: maximum size of the network
+*
+* Creates a new CNetwork with a limit to the number of nodes. The maximum is fixed and
+* the memory for the nodes is not allocated.
+*/
 template <class T, typename B>
 CNetwork<T,B>::CNetwork(int max_size) : DirectedCNetwork<T,B>(max_size)
 {
@@ -212,7 +87,11 @@ CNetwork<T,B>::CNetwork(int max_size) : DirectedCNetwork<T,B>(max_size)
     return;
 }
 
-
+/** \brief Delete all the data stored by the network
+*  \param max_size: maximum size of the network
+*
+* Delete everything stored by the network.
+*/
 template <class T, typename B>
 void CNetwork<T,B>::clear_network()
 {
@@ -236,31 +115,16 @@ void CNetwork<T,B>::clear_network()
     return;
 }
 
-/*
-template <class T, typename B>
-CNetwork<T,B> &CNetwork<T,B>::operator= (const CNetwork<T,B> &other)
-{
-    adjm = other.adjm;
-
-    max_net_size = other.max_net_size;
-    current_size = other.current_size;
-    link_count = other.link_count;
-
-    value = other.value;
-    prop_d = other.prop_d;
-    prop_b = other.prop_b;
-    prop_i = other.prop_i;
-    prop_s = other.prop_s;
-
-    return (*this);
-}*/
-
 
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
 
-
+/** \brief Remove a node from the network
+*  \param index: index of the node to remove
+*
+* Remove the selected node from the network. All links related to this node will be erased.
+*/
 template <class T, typename B>
 bool CNetwork<T,B>::remove_node(int index)
 {
@@ -327,6 +191,13 @@ bool CNetwork<T,B>::remove_node(int index)
     else return false;
 }
 
+
+/** \brief Add a link to the network
+*  \param from: index of the origin node
+*  \param to: index of the target node
+*
+* Adds a link from the nodes from and to
+*/
 template <class T, typename B>
 void CNetwork<T,B>::add_link(int from, int to)
 {
@@ -339,6 +210,14 @@ void CNetwork<T,B>::add_link(int from, int to)
     return;
 }
 
+
+/** \brief Add a link to the network
+*  \param from: index of the origin node
+*  \param to: index of the target node
+*  \param w: weight of the link.
+*
+* Add a weighted link between nodes from and to
+*/
 template <class T, typename B>
 void CNetwork<T,B>::add_link(int from, int to, B w)
 {
@@ -352,6 +231,14 @@ void CNetwork<T,B>::add_link(int from, int to, B w)
     return;
 }
 
+
+/** \brief Remove a link from the network
+*  \param from: Index of the origin node
+*  \param to: Index of the target node
+*  \return false if there is no link between from and to.
+*
+* Remove the a link between nodes from and to, if it exist.
+*/
 template <class T, typename B>
 bool CNetwork<T,B>::remove_link(int from, int to)
 {
@@ -391,13 +278,24 @@ bool CNetwork<T,B>::remove_link(int from, int to)
 // ========================================================================================================
 // ========================================================================================================
 
-
+/** \brief Compute mean degree of the network
+*  \return Mean degree
+*
+* Computes the mean degree of the network
+*/
 template <class T, typename B>
 double CNetwork<T,B>::mean_degree()
 {
     return DirectedCNetwork<T,B>::mean_degree(this->TOTAL_DEGREE);
 }
 
+
+/** \brief Computes the clustering coefficient of a node
+*  \param index: target node
+*  \return clustering coefficient of target node
+*
+* Compute a clustering coefficient of a target node.
+*/
 template <class T, typename B>
 double CNetwork<T,B>::clustering_coef(int node_index)
 {
@@ -433,7 +331,12 @@ double CNetwork<T,B>::clustering_coef(int node_index)
 
 }
 
-
+/** \brief Computes verage clustering coefficient
+*  \return clustering coefficient of the network
+*
+* Computes the clustering coefficient of each element, and takes the average.
+* It is not the same as the one computed counting triangles.
+*/
 template <class T, typename B>
 double CNetwork<T,B>::mean_clustering_coef()
 {
@@ -449,7 +352,12 @@ double CNetwork<T,B>::mean_clustering_coef()
     return sum / (this->current_size * 1.0);
 }
 
-
+/** \brief Computes the degree distribution of the network
+*  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
+*  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
+*
+* Compute the degree distribution of the network. If you also need the correlations, please use instead degree_correlation.
+*/
 template <class T, typename B>
 void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normalized)
 {
@@ -457,6 +365,15 @@ void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normaliz
     return;
 }
 
+
+/** \brief Computes the degree distribution and correlations
+*  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
+*  \param[out] correlation: index j contains average degree of neighbours of a node with degree j
+*  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
+*
+* Computes the average number of neighbours that a node with degree j has. It also computes and stores the degree distribution,
+* since both quantities are usually needed.
+*/
 template <class T, typename B>
 void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized)
 {
@@ -464,34 +381,63 @@ void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double>
     return;
 }
 
-// ========================================================================================================
-// ========================================================================================================
-// ========================================================================================================
-
 
 
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
 
+
+
+// ========================================================================================================
+// ========================================================================================================
+// ========================================================================================================
+
+
+/** \brief Gets the degree of the target node
+*  \param node_index: target node
+*  \return degree of target node
+*
+* Returns the degree of the target node
+*/
 template <class T, typename B>
 int CNetwork<T,B>::degree(int node_index)
 {
     return this->neighs[node_index].size();
 }
 
+/** \brief Gets the in-degree of the target node
+*  \param node_index: target node
+*  \return in-degree of target node
+*
+* Returns the in-degree of the target node
+*/
 template <class T, typename B>
 int CNetwork<T,B>::in_degree(int node_index)
 {
     return this->neighs[node_index].size();
 }
 
+/** \brief Gets the out-degree of the target node
+*  \param node_index: target node
+*  \return out-degree of target node
+*
+* Returns the out-degree of the target node
+*/
 template <class T, typename B>
 int CNetwork<T,B>::out_degree(int node_index)
 {
     return this->neighs[node_index].size();
 }
 
+/** \brief Gets a link between two specified nodes
+*  \param from: origin node
+*  \param to: destination node
+*  \return index of the link between from and destination.
+*
+* Returns the index of the link that connects nodes from and to. If there is no link, then
+* it returns -1.
+*/
 template <class T, typename B>
 int CNetwork<T,B>::get_link_index(int from, int to)
 {
@@ -508,14 +454,30 @@ int CNetwork<T,B>::get_link_index(int from, int to)
     return found ? i-1 : -1; //Remember we have just summed i
 }
 
+
+/** \brief Get the neighbours of a given node
+*  \param node_index: target node
+*  \return vector containing the indices of the neighbour nodes of the target node
+*
+* Returns the a vector with the indices of the neighbours of the specified node.
+*/
 template <class T, typename B>
 vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index)
 {
     return this->neighs[node_index];
 }
 
+
+/** \brief Selects a neighbour of a given node
+*  \param node_index: target node
+*  \param k: neighbour to be selected
+*  \return index of the k-th neighbour of the target node
+*
+* Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
+*/
 template <class T, typename B>
 int CNetwork<T,B>::get_neigh_at(int node_index, int k)
 {
     return this->neighs[node_index][k];
 }
+

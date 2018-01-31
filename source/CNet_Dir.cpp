@@ -38,489 +38,92 @@ class DirectedCNetwork
 {
     public:
 
-        /** \brief Add new nodes to the network
-        *  \param n: number of nodes to add
-        *
-        * Add new nodes to the network
-        */
+
         void add_nodes(int n);
-
-
-        /** \brief Remove a node from the network
-        *  \param index: index of the node to remove
-        *
-        * Remove the selected node from the network. All links related to this node will be erased.
-        */
         bool remove_node(int index);
 
 
-        /** \brief Add a link to the network
-        *  \param from: index of the origin node
-        *  \param to: index of the target node
-        *
-        * Adds a link from the nodes from and to
-        */
+
         void add_link(int from, int to);
-
-        /** \brief Add a link to the network
-        *  \param from: index of the origin node
-        *  \param to: index of the target node
-        *  \param w: weight of the link.
-        *
-        * Add a weighted link between nodes from and to
-        */
         void add_link(int from, int to, B w);
-
-        /** \brief Remove a link from the network
-        *  \param from: Index of the origin node
-        *  \param to: Index of the target node
-        *  \return false if there is no link between from and to.
-        *
-        * Remove the a link between nodes from and to, if it exist.
-        */
         bool remove_link(int from, int to);
 
 
 
-        /** \brief Compute mean degree of the network
-        *  \param type: kind of average to take: IN_DEGREE, OUT_DEGREE, or TOTAL_DEGREE
-        *  \return Mean degree
-        *
-        * Computes the mean degree of the network
-        */
+
         double mean_degree(int type);
-
-        /** \brief Computes the clustering coefficient of a node
-        *  \param index: target node
-        *  \return clustering coefficient of target node
-        *
-        * Compute a clustering coefficient of a target node.
-        */
-        double clustering_coef(int node_index);
-
-        /** \brief Computes verage clustering coefficient
-        *  \return clustering coefficient of the network
-        *
-        * Computes the clustering coefficient of each element, and takes the average.
-        * It is not the same as the one computed counting triangles.
-        */
-        double mean_clustering_coef();
-
-        /** \brief Performs a BFS from the selected node
-        *  \param node: index of the target node
-        *  \param[out] dist: element j is the distance to j
-        *
-        *  Computes a BFS using the algorithm given in Newman's book. Returns the distance to all
-        *  the nodes in the network from the target node. dist[j] is distance to j.
-        */
-        void breadth_first_search(int node, vector<int> &dist);
-
-        /** \brief Computes the nodes in the same component as target
-        *  \param index: target node
-        *  \param[out] list_nodes: indices of nodes in the same component as target
-        *  \param comp_size: optional. If component size is known before hand, it speeds up the method.
-        *
-        * Use BFS to see which nodes are in the same network component than me. If the size of the component
-        * is known beforehand, it can be given to the algorithm to make it faster.
-        */
-        void component_nodes(int index, vector<int> &list_nodes, int comp_size = -1);
-
-        /** \brief Finds all not-connected components of network and computes the sizes
-        *  \param[out] node_in_this_component: each component j is represented by a node index j.
-        *  \param[out] size_of_components: element j of this list contains size of component j
-        *
-        * Use BFS to find all network components. Each component, j, is represented by its size, and by
-        * a node that is inside the component. This node can be used to recover the full component with
-        * component_nodes, if needed.
-        */
-        void component_size(vector<int> &node_in_this_component, vector<int> &size_of_components);
-
-        /** \brief Computes the component with largest size, and return it
-        *  \return size of the largest component
-        *
-        * Use BFS to compute component of network with largest size
-        */
-        int largest_component_size();
-
-
-        /** \brief Computes the degree distribution of the network
-        *  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
-        *  \param type: kind of average to take: IN_DEGREE, OUT_DEGREE, or TOTAL_DEGREE
-        *  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
-        *
-        * Compute the degree distribution of the network. If you also need the correlations, please use instead degree_correlation.
-        */
         void degree_distribution(vector<int> &distribution, int type, bool normalized = false);
-
-        /** \brief Computes the degree distribution and correlations
-        *  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
-        *  \param[out] correlation: index j contains average degree of neighbours of a node with degree j
-        *  \param type: kind of average to take: IN_DEGREE, OUT_DEGREE, or TOTAL_DEGREE
-        *  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
-        *
-        * Computes the average number of neighbours that a node with degree j has. It also computes and stores the degree distribution,
-        * since both quantities are usually needed.
-        */
         void degree_correlation(vector<int> &distribution, vector<double> &correlation,  int type, bool normalized = false);
 
 
-        /** \brief Computes the average pathlenght of the network
-        *  \return pathlenght of the network.
-        *
-        * Uses BFS to compute the average pathlenght of the complete network (even if it is disconnected). To compute
-        * pathlenght of single network component, use average_pathlenght_component instead
-        */
+        void breadth_first_search(int node, vector<int> &dist);
+        void component_nodes(int index, vector<int> &list_nodes, int comp_size = -1);
+        void component_size(vector<int> &node_in_this_component, vector<int> &size_of_components);
+        int largest_component_size();
         double average_pathlenght();
-
-
-        /** \brief Computes the average pathlenght of a component
-        *  \param cmponent_index: index of a node that belongs to the desired component
-        *  \param comp_size: optional. Size of the desired component
-        *
-        * Uses BFS to compute the average pathlenght of a component, that is selected via the index of a node that belongs
-        * to the component. If size of the component is known beforehand, it speeds up the computations
-        */
         double average_pathlenght_component(int component_index, int comp_size = -1);
 
 
-        /** \brief Generates an Albert-Barabasi network
-        *  \param n: nodes of the network
-        *  \param m0: initial number of fully-connected nodes
-        *  \param m: new links added for each node
-        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
-        *
-        * Generates an Albert-Barabasi network based in the algorithm given by Newman. The random seed should be
-        * specified for obtaining different networks each iteration.
-        */
+
         void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed = 123456789);
-
-        /** \brief Generates a scale-free network using the configurational model
-        *  \param nodes: nodes of the network
-        *  \param kmin: minimum degree of each node
-        *  \param gamma: exponent of power law
-        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
-        *
-        * Generates a scale free network based using the configuration model. The random seed should be
-        * specified for obtaining different networks each iteration.
-        */
         void create_configurational(int nodes, int kmin, double gamma, unsigned int random_seed);
-
-
-        /** \brief Generates a Watts-Strogatz network
-        *  \param nodes: nodes of the network
-        *  \param regular_connections: degree of each node in the case p=0
-        *  \param p: probability of shuffling edges
-        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
-        *
-        * Generates a Watts-Strogatz network. In the case of a completely regular network (p=0), each node
-        * has regular_connections edges. The random seed should be specified for obtaining different networks each iteration.
-        */
         void create_watts_strogatz(int nodes, int regular_connections, double p, unsigned int random_seed);
+        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789);
 
 
-        /** \brief Generates a random Erdos-Renyi network
-        *  \param nodes: nodes of the network
-        *  \param mean_k: average degree
-        *  \param random_seed: optional, default 123456789. Same seed gives the same network.
-        *
-        * Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration.
-        */
-        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed);
 
-
-        /** \brief Gets the in-degree of the target node
-        *  \param node_index: target node
-        *  \return in-degree of target node
-        *
-        * Returns the in-degree of the target node
-        */
         int in_degree(int node_index);
-
-
-
-        /** \brief Gets the out-degree of the target node
-        *  \param node_index: target node
-        *  \return out-degree of target node
-        *
-        * Returns the out-degree of the target node
-        */
         int out_degree(int node_index);
-
-
-        /** \brief Gets the degree of the target node
-        *  \param node_index: target node
-        *  \return degree of target node
-        *
-        * Returns the degree of the target node
-        */
         int degree(int node_index);
 
 
-        /** \brief Gets a link by its index
-        *  \param link_index: index of target link
-        *  \return vector containing origin and target node indices
-        *
-        * Returns a vector (node_origin, node_destination) given the link index
-        */
+
         vector<int> get_link(int link_index);
-
-
-        /** \brief Gets a link weight
-        *  \param link_index: index of target link
-        *  \return link weight
-        *
-        * Returns the object ("weight") associated with the specified link
-        */
         B get_weight(int link_index);
-
-        /** \brief Gets a link between two specified nodes
-        *  \param from: origin node
-        *  \param to: destination node
-        *  \return index of the link between from and destination.
-        *
-        * Returns the index of the link that connects nodes from and to. If there is no link, then
-        * it returns -1.
-        */
+        void set_weight(int link_index, B weight);
         int get_link_index(int from, int to);
 
 
-        /** \brief Total number of nodes in the network
-        *  \return number of nodes in the network
-        *
-        * Returns the total number of nodes initialized in the network
-        */
+
         int get_node_count();
-
-
-        /** \brief Total number of links in the network
-        *  \return number of links in the network
-        *
-        * Returns the total number of links initialized in the network
-        */
         int get_link_count();
 
 
-        /** \brief Get the neighbours of a given node
-        *  \param node_index: target node
-        *  \return vector containing the indices of the neighbour nodes of the target node
-        *
-        * Returns the a vector with the indices of the neighbours of the specified node.
-        */
-        vector<unsigned int> get_neighs(int node_index);
+
+        vector<unsigned int> get_neighs_out(int node_index);
+        vector<unsigned int> get_neighs_in(int node_index);
+        int get_out(int node_index, int k);
+        int get_in(int node_index, int k);
 
 
 
-        /** \brief Get the nodes pointing to me in the network
-        *  \param node_index: target node
-        *  \return vector containing the indices of the nodes that point to the target node
-        *
-        * Returns the a vector with the indices of the nodes that point to the specified node.
-        */
-        vector<unsigned int> get_neighs_pointing(int node_index);
-
-
-        /** \brief Selects a neighbour of a given node
-        *  \param node_index: target node
-        *  \param k: neighbour to be selected
-        *  \return index of the k-th neighbour of the target node
-        *
-        * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
-        */
-        int get_neigh_at(int node_index, int k);
-
-
-
-        /** \brief Selects a node pointing to the given node
-        *  \param node_index: target node
-        *  \param k: node to be selected
-        *  \return index of the k-th neighbour of the list of nodes pointing to me
-        *
-        * Returns the index of the k-th node pointing to the target node.
-        */
-        int get_neigh_point_at(int node_index, int k);
-
-
-        /** \brief Define a new tag for the network
-        *  \param name: tag identifier
-        *  \param type: can be int, double, string, or bool.
-        *  \param is_for_nodes: if false, this property is assigned to links
-        *
-        * Define a new property or tag. This will be exported to GraphML. It can
-        * be used also as additional properties for network dynamics.
-        */
         void define_property(string name, string type, bool is_for_nodes);
-
-
-        /** \brief Set the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \param value: the new value
-        *
-        * Set a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         void set_value(string name, int index, double value);
-
-
-        /** \brief Set the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \param value: the new value
-        *
-        * Set a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         void set_value(string name, int index,  int value);
-
-
-        /** \brief Set the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \param value: the new value
-        *
-        * Set a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         void set_value(string name, int index,  bool value);
-
-
-        /** \brief Set the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \param value: the new value
-        *
-        * Set a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         void set_value(string name, int index,  string value);
-
-
-
-        /** \brief Get the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \return value stored
-        *
-        * Get a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         double get_value_d(string name, int index);
-
-
-        /** \brief Get the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \return value stored
-        *
-        * Get a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         int get_value_i(string name, int index);
-
-
-
-        /** \brief Get the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \return value stored
-        *
-        * Get a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         bool get_value_b(string name, int index);
-
-
-
-        /** \brief Get the value of an existing property
-        *  \param name: tag identifier
-        *  \param index: index or node or link where it has to be stored
-        *  \return value stored
-        *
-        * Get a value for the property "name" in the node or link index. Note that
-        * user must take care of manually checking index bounds.
-        */
         string get_value_s(string name, int index);
 
 
 
-        /** \brief Export network data to GraphML, Gephi compatible format
-        *  \param filename: name of the file (without extension)
-        *  \param labels: optional. Tags used to name the nodes
-        *
-        * Export the network data. Properties defined via define_property will be stored as node or link
-        * properties. In addition to that, it is also possible to label directly the nodes. This will be
-        * recognized as a node identifier in software like Gephi. For compatibility, MTX format is preferred
-        */
+
         void write_graphml(string filename, vector<string> labels = vector<string>());
-
-
-
-        /** \brief Export network data to plain MTX format
-        *  \param filename: name of the file (without extension)
-        *
-        * The MTX format is defined by a simple plaintext representation of the adjancency matrix.
-        * This is compatible with most network-analysis software, and it is easy to read from any language.
-        */
         void write_mtx(string filename);
-
-
-
-        /** \brief Read network data from plain MTX format
-        *  \param filename: name of the file (including extension)
-        *
-        * The MTX format is defined by a simple plaintext representation of the adjancency matrix.
-        * This function reads any MTX-like format
-        */
         void read_mtx(string filename);
 
 
-        /*
-        /** \brief Assignement operator
-        *  \param other: another DirectedCNetwork of the same type
-        *  \return DirectedCNetwork
-        *
-        * Assigns a network to another.
-        */
-        //DirectedCNetwork<T,B> &operator=(const DirectedCNetwork<T,B> &other);
 
-
-        /** \brief Bracket operator
-        *  \param i: index
-        *  \return reference to the value stored in i-th node
-        *
-        * Access the value stored in the i-th node.
-        */
         T& operator[](const int& i);
-
-
-
-        /** \brief DirectedCNetwork standard constructor
-        *  \param max_size: maximum size of the network
-        *
-        * Creates a new DirectedCNetwork with a limit to the number of nodes. The maximum is fixed and
-        * the memory for the nodes is not allocated.
-        */
         DirectedCNetwork(int max_size);
 
 
 
-        /** \brief Largest eigenvalue calculator
-        *  \param approx_error: desired margin of error for the eigenvalue
-        *  \param max_it: optional. Limits the number of iterations. Default: 20
-        *  \return vector that contains the largest eigenvalue (last element) and corresponding eigenvector.
-        *
-        * Computes the largest eigenvalue of the adjacency matrix using a power method. It returns a vector that
-        * has the largest eigenvalue as the last element. The other values are the eigenvector.
-        */
+
         vector<double> compute_eigenv(double approx_error, int max_it = 20);
 
-
-
-        /** \brief Delete all the data stored by the network
-        *  \param max_size: maximum size of the network
-        *
-        * Delete everything stored by the network.
-        */
         void clear_network();
 
 
@@ -564,6 +167,12 @@ using DWCNd = DirectedCNetwork<double, double>;
 // ========================================================================================================
 
 
+/** \brief DirectedCNetwork standard constructor
+*  \param max_size: maximum size of the network
+*
+* Creates a new DirectedCNetwork with a limit to the number of nodes. The maximum is fixed and
+* the memory for the nodes is not allocated.
+*/
 template <class T, typename B>
 DirectedCNetwork<T,B>::DirectedCNetwork(int max_size)
 {
@@ -573,6 +182,12 @@ DirectedCNetwork<T,B>::DirectedCNetwork(int max_size)
     return;
 }
 
+
+/** \brief Delete all the data stored by the network
+*  \param max_size: maximum size of the network
+*
+* Delete everything stored by the network.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::clear_network()
 {
@@ -596,27 +211,12 @@ void DirectedCNetwork<T,B>::clear_network()
 }
 
 
-/*
-template <class T, typename B>
-DirectedCNetwork<T,B> &DirectedCNetwork<T,B>::operator= (const DirectedCNetwork<T,B> &other)
-{
-    adjm = other.adjm;
-
-    neighs
-
-    max_net_size = other.max_net_size;
-    current_size = other.current_size;
-    link_count = other.link_count;
-
-    value = other.value;
-    prop_d = other.prop_d;
-    prop_b = other.prop_b;
-    prop_i = other.prop_i;
-    prop_s = other.prop_s;
-
-    return (*this);
-} */
-
+/** \brief Bracket operator
+*  \param i: index
+*  \return reference to the value stored in i-th node
+*
+* Access the value stored in the i-th node.
+*/
 template <class T, typename B>
 T& DirectedCNetwork<T,B>::operator[](const int& i)
 {
@@ -628,6 +228,12 @@ T& DirectedCNetwork<T,B>::operator[](const int& i)
 // ========================================================================================================
 
 
+
+/** \brief Add new nodes to the network
+*  \param n: number of nodes to add
+*
+* Add new nodes to the network
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::add_nodes(int n)
 {
@@ -648,7 +254,11 @@ void DirectedCNetwork<T,B>::add_nodes(int n)
 }
 
 
-///TODO: change for directed stuff
+/** \brief Remove a node from the network
+*  \param index: index of the node to remove
+*
+* Remove the selected node from the network. All links related to this node will be erased.
+*/
 template <class T, typename B>
 bool DirectedCNetwork<T,B>::remove_node(int index)
 {
@@ -666,7 +276,7 @@ bool DirectedCNetwork<T,B>::remove_node(int index)
         {
             for (j=0; j < out_degree(i); j++)
             {
-                k = get_neigh_at(i,j);
+                k = get_out(i,j);
                 if (k == index) //If it is the one I want to erase, remove
                 {
                     neighs[i].erase(neighs[i].begin() + j);
@@ -678,7 +288,7 @@ bool DirectedCNetwork<T,B>::remove_node(int index)
             }
             for (j=0; j < in_degree(i); j++)
             {
-                k = get_neigh_point_at(i,j);
+                k = get_in(i,j);
                 if (k == index) //If it is the one I want to erase, remove
                 {
                     pointing_in[i].erase(pointing_in[i].begin() + j);
@@ -727,10 +337,17 @@ bool DirectedCNetwork<T,B>::remove_node(int index)
     else return false;
 }
 
+
+/** \brief Add a link to the network
+*  \param from: index of the origin node
+*  \param to: index of the target node
+*
+* Adds a link from the nodes from and to
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::add_link(int from, int to)
 {
-    adjm.push_back(data<bool>(from, to, true)); //Assume this method is for bools
+    adjm.push_back(data<B>(from, to, true)); //Assume this method is for bools
 
     neighs[from].push_back(to); //Add the node to the neighbours
     pointing_in[to].push_back(from); //"to" node is being pointed by "from"
@@ -739,6 +356,14 @@ void DirectedCNetwork<T,B>::add_link(int from, int to)
     return;
 }
 
+
+/** \brief Add a link to the network
+*  \param from: index of the origin node
+*  \param to: index of the target node
+*  \param w: weight of the link.
+*
+* Add a weighted link between nodes from and to
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::add_link(int from, int to, B w)
 {
@@ -754,17 +379,24 @@ void DirectedCNetwork<T,B>::add_link(int from, int to, B w)
 
 
 // TODO: optimize the remove link function
+/** \brief Remove a link from the network
+*  \param from: Index of the origin node
+*  \param to: Index of the target node
+*  \return false if there is no link between from and to.
+*
+* Remove the a link between nodes from and to, if it exist.
+*/
 template <class T, typename B>
 bool DirectedCNetwork<T,B>::remove_link(int from, int to)
 {
     //Reduce the degree of the nodes
     auto index_it = find(neighs[from].begin(), neighs[from].end(), to); //Relative index of TO in terms of FROM
-    int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
 
-
-    if (index_neigh >= 0 and index_neigh < neighs[from].size())
+    //If the link is correct,
+    if (index_it != neighs[from].end())
     {
-        //int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
+        int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
+
         int index_link = get_link_index(from, to);
 
         adjm.erase(index_link); //Delete the link
@@ -778,7 +410,7 @@ bool DirectedCNetwork<T,B>::remove_link(int from, int to)
         //Do the same process, but now in the other node, the to one.
         //Since this node was in the neigh list of FROM, we know that FROM has to be in the pointing_in list of TO
         //That's why we don't check again if index_it < neighs end
-        index_it = find(pointing_in[to].begin(), pointing_in[to].end(), from); //find(neighs[to].begin(), neighs[to].end(), from);
+        index_it = find(pointing_in[to].begin(), pointing_in[to].end(), from);
         index_neigh = distance(pointing_in[to].begin(), index_it);
 
         pointing_in[to].erase(pointing_in[to].begin()+index_neigh);
@@ -794,7 +426,12 @@ bool DirectedCNetwork<T,B>::remove_link(int from, int to)
 // ========================================================================================================
 // ========================================================================================================
 
-
+/** \brief Compute mean degree of the network
+*  \param type: kind of average to take: IN_DEGREE, OUT_DEGREE, or TOTAL_DEGREE
+*  \return Mean degree
+*
+* Computes the mean degree of the network
+*/
 template <class T, typename B>
 double DirectedCNetwork<T,B>::mean_degree(int type)
 {
@@ -819,59 +456,13 @@ double DirectedCNetwork<T,B>::mean_degree(int type)
 }
 
 
-///TODO: CLUSTERING COEFFICIENT IS NOT DEFINED FOR A NODE ---- ONLY FOR MOTIFS
-template <class T, typename B>
-double DirectedCNetwork<T,B>::clustering_coef(int node_index)
-{
-    if (degree(node_index) > 1) //If we have more than one neighbour...
-    {
-        int i,j;
-        int counter; //Count of pairs
-
-
-        vector<unsigned int> nodes_neigh = get_neighs(node_index);
-        vector<unsigned int> nodes_check;
-
-        counter = 0;
-        for (i=0; i < nodes_neigh.size(); i++) //Get neighbours of our node
-        {
-            nodes_check = get_neighs(nodes_neigh[i]); //Get neighbours of node i
-
-            //For the next nodes, (start in j=i+1 to avoid double-count a pair)
-            for (j=i+1; j < nodes_neigh.size(); j++)
-            {
-                //Use the  find function to see if this node is connected to any other neighbours of our node.
-                //In that case, increase the counter
-                if (find(nodes_check.begin(), nodes_check.end(), nodes_neigh[j]) != nodes_check.end()) counter += 1;
-            }
-        }
-
-        return 2.0 * counter / (degree(node_index) * (degree(node_index) - 1)); //Finish computation and return clustering coefficient
-    }
-    else //... in other case, we cannot have common neighbours
-    {
-        return 0.0;
-    }
-
-}
-
-
-template <class T, typename B>
-double DirectedCNetwork<T,B>::mean_clustering_coef()
-{
-    int i;
-    double sum = 0.0; //Get the sum,
-
-    //Sum over the network
-    for (i=0; i < current_size; i++)
-    {
-        sum += clustering_coef(i);
-    }
-    //Divide by current size
-    return sum / (current_size * 1.0);
-}
-
-
+/** \brief Performs a BFS from the selected node
+*  \param node: index of the target node
+*  \param[out] dist: element j is the distance to j
+*
+*  Computes a BFS using the algorithm given in Newman's book. Returns the distance to all
+*  the nodes in the network from the target node. dist[j] is distance to j.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::breadth_first_search(int node, vector<int> &dist)
 {
@@ -906,7 +497,7 @@ void DirectedCNetwork<T,B>::breadth_first_search(int node, vector<int> &dist)
         d = dist[cur_node]; //Get the distance this node is at,
         for (j=0; j < out_degree(cur_node); j++)
         {
-            neigh = get_neigh_at(cur_node, j); //Get the neighbour
+            neigh = get_out(cur_node, j); //Get the neighbour
             if (dist[neigh] == -1) //If distance is unknown,
             {
                 dist[neigh] = d+1; //Put its distance,
@@ -919,6 +510,15 @@ void DirectedCNetwork<T,B>::breadth_first_search(int node, vector<int> &dist)
     return;
 }
 
+
+/** \brief Computes the nodes in the same component as target
+*  \param index: target node
+*  \param[out] list_nodes: indices of nodes in the same component as target
+*  \param comp_size: optional. If component size is known before hand, it speeds up the method.
+*
+* Use BFS to see which nodes are in the same network component than me. If the size of the component
+* is known beforehand, it can be given to the algorithm to make it faster.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, int comp_size)
 {
@@ -970,6 +570,16 @@ void DirectedCNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, 
     return;
 }
 
+
+
+/** \brief Finds all not-connected components of network and computes the sizes
+*  \param[out] node_in_this_component: each component j is represented by a node index j.
+*  \param[out] size_of_components: element j of this list contains size of component j
+*
+* Use BFS to find all network components. Each component, j, is represented by its size, and by
+* a node that is inside the component. This node can be used to recover the full component with
+* component_nodes, if needed.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components)
 {
@@ -1020,6 +630,11 @@ void DirectedCNetwork<T,B>::component_size(vector<int> &node_in_this_component, 
 }
 
 
+/** \brief Computes the component with largest size, and return it
+*  \return size of the largest component
+*
+* Use BFS to compute component of network with largest size
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::largest_component_size()
 {
@@ -1035,7 +650,12 @@ int DirectedCNetwork<T,B>::largest_component_size()
     return *max_element(size_of_components.begin(), size_of_components.end());
 }
 
-
+/** \brief Computes the average pathlenght of the network
+*  \return pathlenght of the network.
+*
+* Uses BFS to compute the average pathlenght of the complete network (even if it is disconnected). To compute
+* pathlenght of single network component, use average_pathlenght_component instead
+*/
 template <class T, typename B>
 double DirectedCNetwork<T,B>::average_pathlenght()
 {
@@ -1067,6 +687,15 @@ double DirectedCNetwork<T,B>::average_pathlenght()
     return (counter > 0) ? pathlenght / (1.0 * counter) : -1.0; //Return the average pathlenght of the network
 }
 
+
+
+/** \brief Computes the average pathlenght of a component
+*  \param cmponent_index: index of a node that belongs to the desired component
+*  \param comp_size: optional. Size of the desired component
+*
+* Uses BFS to compute the average pathlenght of a component, that is selected via the index of a node that belongs
+* to the component. If size of the component is known beforehand, it speeds up the computations
+*/
 template <class T, typename B>
 double DirectedCNetwork<T,B>::average_pathlenght_component(int component_index, int comp_size)
 {
@@ -1105,7 +734,13 @@ double DirectedCNetwork<T,B>::average_pathlenght_component(int component_index, 
     return (counter > 0) ? pathlength / (1.0 * counter) : -1.0; //Return the average pathlenght of the network
 }
 
-
+/** \brief Computes the degree distribution of the network
+*  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
+*  \param type: kind of average to take: IN_DEGREE, OUT_DEGREE, or TOTAL_DEGREE
+*  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
+*
+* Compute the degree distribution of the network. If you also need the correlations, please use instead degree_correlation.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::degree_distribution(vector<int> &distribution, int type, bool normalized)
 {
@@ -1138,6 +773,15 @@ void DirectedCNetwork<T,B>::degree_distribution(vector<int> &distribution, int t
 }
 
 
+/** \brief Computes the degree distribution and correlations
+*  \param[out] distribution: index j contains number of nodes with degree j. It is the degree distribution
+*  \param[out] correlation: index j contains average degree of neighbours of a node with degree j
+*  \param type: kind of average to take: IN_DEGREE, OUT_DEGREE, or TOTAL_DEGREE
+*  \param normalized: optional. If set to true, returns a normalized distribution. False by default.
+*
+* Computes the average number of neighbours that a node with degree j has. It also computes and stores the degree distribution,
+* since both quantities are usually needed.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, int type, bool normalized)
 {
@@ -1154,17 +798,17 @@ void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector
     if (type == 0)
     {
         deg_fun = &DirectedCNetwork<T,B>::in_degree;
-        neigh_fun = &DirectedCNetwork<T,B>::get_neigh_point_at;
+        neigh_fun = &DirectedCNetwork<T,B>::get_in;
     }
     else if (type == 1)
     {
         deg_fun = &DirectedCNetwork<T,B>::out_degree;
-        neigh_fun = &DirectedCNetwork<T,B>::get_neigh_at;
+        neigh_fun = &DirectedCNetwork<T,B>::get_out;
     }
     else
     {
         deg_fun = &DirectedCNetwork<T,B>::degree;
-        neigh_fun = &DirectedCNetwork<T,B>::get_neigh_at;
+        neigh_fun = &DirectedCNetwork<T,B>::get_out;
     }
 
     //Get the maximum degree of the network
@@ -1227,11 +871,25 @@ void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector
 // ========================================================================================================
 // ========================================================================================================
 
+
+
+/** \brief Generates a random Erdos-Renyi network
+*  \param nodes: nodes of the network
+*  \param mean_k: average degree
+*  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*
+* Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
 {
+    //TODO: make faster
+
     int i,j,k;
     double p = mean_k / (n - 1.0);
+    double phalf = p/2.0; //Compute half of the probability
+
+    double r;
 
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
@@ -1244,10 +902,10 @@ void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned in
     {
         for (j=i+1; j < current_size; j++)
         {
-            if (ran_u(gen) <= p)
-            {
-                add_link(i, j);
-            }
+            r = ran_u(gen);
+            //With probability p, add link. With probability 1/2, select if the link goes out or in
+            if (r <= phalf) add_link(i, j);
+            else if (r <= p) add_link(j, i);
         }
     }
 
@@ -1255,6 +913,17 @@ void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned in
 
 }
 
+
+
+/** \brief Generates a scale-free network using the configurational model
+*  \param nodes: nodes of the network
+*  \param kmin: minimum degree of each node
+*  \param gamma: exponent of power law
+*  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*
+* Generates a scale free network based using the configuration model. The random seed should be
+* specified for obtaining different networks each iteration.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::create_configurational(int n, int mink, double gamma, unsigned int random_seed)
 {
@@ -1321,6 +990,17 @@ void DirectedCNetwork<T,B>::create_configurational(int n, int mink, double gamma
 
 }
 
+
+
+/** \brief Generates a Watts-Strogatz network
+*  \param nodes: nodes of the network
+*  \param regular_connections: degree of each node in the case p=0
+*  \param p: probability of shuffling edges
+*  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*
+* Generates a Watts-Strogatz network. In the case of a completely regular network (p=0), each node
+* has regular_connections edges. The random seed should be specified for obtaining different networks each iteration.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::create_watts_strogatz(int n, int num_forward_edges, double p, unsigned int random_seed)
 {
@@ -1349,7 +1029,7 @@ void DirectedCNetwork<T,B>::create_watts_strogatz(int n, int num_forward_edges, 
                 do
                 {
                     to = index(gen); //Get a new neighbour
-                    aux = get_neighs(i);
+                    aux = get_neighs_out(i);
                 }
                 //Do it again if I selected exactly the same node, or if it is myself
                 while (to == i && find(aux.begin(), aux.end(), to) != aux.end());
@@ -1362,6 +1042,15 @@ void DirectedCNetwork<T,B>::create_watts_strogatz(int n, int num_forward_edges, 
 }
 
 
+/** \brief Generates an Albert-Barabasi network
+*  \param n: nodes of the network
+*  \param m0: initial number of fully-connected nodes
+*  \param m: new links added for each node
+*  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*
+* Generates an Albert-Barabasi network based in the algorithm given by Newman. The random seed should be
+* specified for obtaining different networks each iteration.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigned int random_seed)
 {
@@ -1375,8 +1064,6 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
     int index_add;
     vector<int> yet_linked(m-1, -1); //Stores with which nodes I have visited. I only need to remember m-1 -I don't have to store the last
     bool found;
-
-    ///TODO: solve the yet_linked problem
 
     //Create fully connected network with m0 nodes
     add_nodes(m0);
@@ -1443,26 +1130,51 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
 // ========================================================================================================
 // ========================================================================================================
 
-
+/** \brief Gets the in-degree of the target node
+*  \param node_index: target node
+*  \return in-degree of target node
+*
+* Returns the in-degree of the target node
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::in_degree(int node_index)
 {
     return pointing_in[node_index].size();
 }
 
+/** \brief Gets the out-degree of the target node
+*  \param node_index: target node
+*  \return out-degree of target node
+*
+* Returns the out-degree of the target node
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::out_degree(int node_index)
 {
     return neighs[node_index].size();
 }
 
+
+/** \brief Gets the degree of the target node
+*  \param node_index: target node
+*  \return degree of target node
+*
+* Returns the degree of the target node
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::degree(int node_index)
 {
     return pointing_in[node_index].size() + neighs[node_index].size();
 }
 
-
+/** \brief Gets a link between two specified nodes
+*  \param from: origin node
+*  \param to: destination node
+*  \return index of the link between from and destination.
+*
+* Returns the index of the link that connects nodes from and to. If there is no link, then
+* it returns -1.
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::get_link_index(int from, int to)
 {
@@ -1479,56 +1191,134 @@ int DirectedCNetwork<T,B>::get_link_index(int from, int to)
     return found ? i-1 : -1; //Remember we have just summed i
 }
 
+
+/** \brief Gets a link by its index
+*  \param link_index: index of target link
+*  \return vector containing origin and target node indices
+*
+* Returns a vector (node_origin, node_destination) given the link index
+*/
 template <class T, typename B>
 vector<int> DirectedCNetwork<T,B>::get_link(int link_index)
 {
     return {adjm[link_index].x, adjm[link_index].y};
 }
 
+
+/** \brief Gets a link weight
+*  \param link_index: index of target link
+*  \return link weight
+*
+* Returns the object ("weight") associated with the specified link
+*/
 template <class T, typename B>
 B DirectedCNetwork<T,B>::get_weight(int link_index)
 {
     return adjm[link_index].value;
 }
 
+
+/** \brief Gets a link weight
+*  \param link_index: index of target link
+*  \param weight: desired weight of the link
+*
+* Sets the object ("weight") associated with the specified link
+*/
+template <class T, typename B>
+void DirectedCNetwork<T,B>::set_weight(int link_index, B weight)
+{
+    adjm[link_index].value = weight;
+    return;
+}
+
+
+/** \brief Total number of nodes in the network
+*  \return number of nodes in the network
+*
+* Returns the total number of nodes initialized in the network
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::get_node_count()
 {
     return current_size;
 }
 
+
+/** \brief Total number of links in the network
+*  \return number of links in the network
+*
+* Returns the total number of links initialized in the network
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::get_link_count()
 {
     return link_count;
 }
 
+
+
+/** \brief Get the nodes the node is pointing to
+*  \param node_index: target node
+*  \return vector containing the indices of the neighbour nodes of the target node
+*
+* Returns the a vector with the indices of the neighbours pointed by the specified node.
+*/
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs(int node_index)
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index)
 {
     return neighs[node_index];
 }
 
 
+/** \brief Get the nodes pointing to me in the network
+*  \param node_index: target node
+*  \return vector containing the indices of the nodes that point to the target node
+*
+* Returns the a vector with the indices of the nodes that point to the specified node.
+*/
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_pointing(int node_index)
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index)
 {
     return pointing_in[node_index];
 }
 
 
+/** \brief Selects a neighbour of a given node
+*  \param node_index: target node
+*  \param k: neighbour to be selected
+*  \return index of the k-th neighbour of the target node
+*
+* Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
+*/
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_neigh_at(int node_index, int k)
+int DirectedCNetwork<T,B>::get_out(int node_index, int k)
 {
     return neighs[node_index][k];
 }
 
+
+/** \brief Selects a node pointing to the given node
+*  \param node_index: target node
+*  \param k: node to be selected
+*  \return index of the k-th neighbour of the list of nodes pointing to me
+*
+* Returns the index of the k-th node pointing to the target node.
+*/
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_neigh_point_at(int node_index, int k)
+int DirectedCNetwork<T,B>::get_in(int node_index, int k)
 {
     return pointing_in[node_index][k];
 }
 
+
+/** \brief Define a new tag for the network
+*  \param name: tag identifier
+*  \param type: can be int, double, string, or bool.
+*  \param is_for_nodes: if false, this property is assigned to links
+*
+* Define a new property or tag. This will be exported to GraphML. It can
+* be used also as additional properties for network dynamics.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::define_property(string name, string type, bool is_for_nodes)
 {
@@ -1553,49 +1343,130 @@ void DirectedCNetwork<T,B>::define_property(string name, string type, bool is_fo
     return;
 }
 
+
+/** \brief Set the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \param value: the new value
+*
+* Set a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::set_value(string name, int index, double value)
 {
     prop_d[name][index] = value;
 }
+
+/** \brief Set the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \param value: the new value
+*
+* Set a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::set_value(string name, int index, int value)
 {
     prop_i[name][index] = value;
 }
+
+
+/** \brief Set the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \param value: the new value
+*
+* Set a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::set_value(string name, int index, bool value)
 {
     prop_b[name][index] = value;
 }
+
+
+/** \brief Set the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \param value: the new value
+*
+* Set a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::set_value(string name, int index, string value)
 {
     prop_s[name][index] = value;
 }
 
+
+/** \brief Get the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \return value stored
+*
+* Get a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 double DirectedCNetwork<T,B>::get_value_d(string name, int index)
 {
     return prop_d[name][index];
 }
+
+/** \brief Get the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \return value stored
+*
+* Get a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 int DirectedCNetwork<T,B>::get_value_i(string name, int index)
 {
     return prop_i[name][index];
 }
+
+/** \brief Get the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \return value stored
+*
+* Get a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 bool DirectedCNetwork<T,B>::get_value_b(string name, int index)
 {
     return prop_b[name][index];
 }
+
+/** \brief Get the value of an existing property
+*  \param name: tag identifier
+*  \param index: index or node or link where it has to be stored
+*  \return value stored
+*
+* Get a value for the property "name" in the node or link index. Note that
+* user must take care of manually checking index bounds.
+*/
 template <class T, typename B>
 string DirectedCNetwork<T,B>::get_value_s(string name, int index)
 {
     return prop_s[name][index];
 }
 
-
+/** \brief Export network data to GraphML, Gephi compatible format
+*  \param filename: name of the file (without extension)
+*  \param labels: optional. Tags used to name the nodes
+*
+* Export the network data. Properties defined via define_property will be stored as node or link
+* properties. In addition to that, it is also possible to label directly the nodes. This will be
+* recognized as a node identifier in software like Gephi. For compatibility, MTX format is preferred
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::write_graphml(string filename, vector<string> labels)
 {
@@ -1808,6 +1679,14 @@ void DirectedCNetwork<T,B>::write_graphml(string filename, vector<string> labels
     output.close();
 }
 
+
+
+/** \brief Export network data to plain MTX format
+*  \param filename: name of the file (without extension)
+*
+* The MTX format is defined by a simple plaintext representation of the adjancency matrix.
+* This is compatible with most network-analysis software, and it is easy to read from any language.
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::write_mtx(string filename)
 {
@@ -1836,6 +1715,13 @@ void DirectedCNetwork<T,B>::write_mtx(string filename)
     output.close();
 }
 
+
+/** \brief Read network data from plain MTX format
+*  \param filename: name of the file (including extension)
+*
+* The MTX format is defined by a simple plaintext representation of the adjancency matrix.
+* This function reads any MTX-like format
+*/
 template <class T, typename B>
 void DirectedCNetwork<T,B>::read_mtx(string filename)
 {
@@ -1885,6 +1771,15 @@ void DirectedCNetwork<T,B>::read_mtx(string filename)
     input.close();
 }
 
+
+/** \brief Largest eigenvalue calculator
+*  \param approx_error: desired margin of error for the eigenvalue
+*  \param max_it: optional. Limits the number of iterations. Default: 20
+*  \return vector that contains the largest eigenvalue (last element) and corresponding eigenvector.
+*
+* Computes the largest eigenvalue of the adjacency matrix using a power method. It returns a vector that
+* has the largest eigenvalue as the last element. The other values are the eigenvector.
+*/
 template <class T, typename B>
 vector<double> DirectedCNetwork<T,B>::compute_eigenv(double approx_error, int max_it)
 {
