@@ -48,7 +48,7 @@ public:
     * Constructs a square matrix. The class take in account if it is symmetric to perform
     * optimized algorithms.
     */
-    SparseMatrix(int msize, bool symmetric);
+    SparseMatrix(const int msize, const bool symmetric);
 
 
     /** \brief Predefined matrices
@@ -57,7 +57,7 @@ public:
     *
     * Types: SM_DIAGONAL: defined for double and bool. Identity matrix
     */
-    SparseMatrix(int type, int msize);
+    SparseMatrix(const int type, const int msize);
 
 
 
@@ -66,7 +66,7 @@ public:
     *
     * Add a new element d at the end of the list
     */
-    void push_back(data<T> d);
+    void push_back(const data<T> &d);
 
 
 
@@ -83,7 +83,7 @@ public:
     *
     * Compute trace of the matrix
     */
-    double trace();
+    double trace() const;
 
     /** \brief Matrix-vector multiplication
     * \param v: vector to multiply with
@@ -91,7 +91,7 @@ public:
     *
     * Efficiently performs a matrix-vector multiplication
     */
-    vector<double> operator *(vector<double> &v);
+    vector<double> operator *(const vector<double> &v);
 
 
     /** \brief Matrix-matrix multiplication
@@ -101,7 +101,7 @@ public:
     * Efficiently performs a matrix-matrix multiplication. Returned type is always double.
     */
     template<typename R>
-    SparseMatrix<double> operator *(SparseMatrix<R> &s);
+    SparseMatrix<double> operator *(const SparseMatrix<R> &s);
 
 
 
@@ -119,7 +119,7 @@ public:
     *
     * Performs exponentiation of a matrix
     */
-    SparseMatrix<double> pow(int n);
+    SparseMatrix<double> pow(const int n);
 
 
 
@@ -131,7 +131,7 @@ public:
     * Computes the largest eigenvalue of the  matrix using a power method. It returns a vector that
     * has the largest eigenvalue as the last element. The other values are the eigenvector.
     */
-    vector<double> dom_eigen(double epsilon, int max_it);
+    vector<double> dom_eigen(const double epsilon, const int max_it) const;
 
 
     /** \brief Set the matrix size
@@ -139,7 +139,7 @@ public:
     *
     * Change matrix dimensions
     */
-    void set_max_size(int msize);
+    void set_max_size(const int msize);
 
 
 
@@ -148,7 +148,7 @@ public:
     *
     * Change matrix dimensions
     */
-    int get_max_size();
+    int get_max_size() const;
 
 
 
@@ -157,7 +157,7 @@ public:
     *
     * Returns the number of non-zero elements in the matrix.
     */
-    int get_number_elements();
+    int get_number_elements() const;
 
 
     /** \brief Assignement operator
@@ -180,10 +180,10 @@ private:
     unsigned int m_dim;
 
 
-    SparseMatrix<double> convert_double();
+    SparseMatrix<double> convert_double() const;
 
-    void normalize_vector(vector<double> &v);
-    double scalar_product(vector<double> &u, vector<double> &v);
+    void normalize_vector(vector<double> &v) const;
+    double scalar_product(vector<double> &u, vector<double> &v) const;
 
 };
 
@@ -230,13 +230,13 @@ SparseMatrix<T>::SparseMatrix(int type, int msize)
 
 
 template<typename T>
-void SparseMatrix<T>::push_back(data<T> d)
+void SparseMatrix<T>::push_back(const data<T> &d)
 {
     m.push_back(d);
 }
 
 template<typename T>
-void SparseMatrix<T>::erase(int index)
+void SparseMatrix<T>::erase(const int index)
 {
     //m[index] = m[m.size() - 1]; //Overwrite the one we want to delete
     //m.pop_back(); //Pop back last
@@ -244,23 +244,23 @@ void SparseMatrix<T>::erase(int index)
 }
 
 template<typename T>
-void SparseMatrix<T>::set_max_size(int msize)
+void SparseMatrix<T>::set_max_size(const int msize)
 {
     m_dim = msize;
 }
 template<typename T>
-int SparseMatrix<T>::get_max_size()
+int SparseMatrix<T>::get_max_size() const
 {
     return m_dim;
 }
 template<typename T>
-int SparseMatrix<T>::get_number_elements()
+int SparseMatrix<T>::get_number_elements() const
 {
     return m.size();
 }
 
 template<typename T>
-SparseMatrix<double> SparseMatrix<T>::convert_double()
+SparseMatrix<double> SparseMatrix<T>::convert_double() const
 {
     int i;
     SparseMatrix<double> s(m_dim, is_symmetric);
@@ -275,7 +275,7 @@ SparseMatrix<double> SparseMatrix<T>::convert_double()
 
 
 template<typename T>
-vector<double> SparseMatrix<T>::operator *(vector<double> &v)
+vector<double> SparseMatrix<T>::operator *(const vector<double> &v)
 {
     int i;
     vector<double> u = vector<double>(v.size(), 0.0);
@@ -311,7 +311,7 @@ vector<double> SparseMatrix<T>::operator *(vector<double> &v)
 
 
 template<typename T> template <typename R>
-SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<R> &s)
+SparseMatrix<double> SparseMatrix<T>::operator *(const SparseMatrix<R> &s)
 {
     int i,j;
     int m_index;
@@ -429,7 +429,7 @@ SparseMatrix<double> SparseMatrix<T>::operator *(SparseMatrix<R> &s)
 
 
 template<typename T>
-double SparseMatrix<T>::trace()
+double SparseMatrix<T>::trace() const
 {
 
     int i;
@@ -466,7 +466,7 @@ data<T> &SparseMatrix<T>::operator [](const int &index)
 }
 
 template<typename T>
-SparseMatrix<double> SparseMatrix<T>::pow(int n)
+SparseMatrix<double> SparseMatrix<T>::pow(const int n)
 {
 
     int i=0;
@@ -484,7 +484,7 @@ SparseMatrix<double> SparseMatrix<T>::pow(int n)
 
 //Note: it return a vector double where the last element is the eigenvalue
 template<typename T>
-vector<double> SparseMatrix<T>::dom_eigen(double epsilon, int max_it)
+vector<double> SparseMatrix<T>::dom_eigen(double epsilon, int max_it) const
 {
     int i,j;
 
@@ -551,7 +551,7 @@ vector<double> SparseMatrix<T>::dom_eigen(double epsilon, int max_it)
 }
 
 template<typename T>
-void SparseMatrix<T>::normalize_vector(vector<double> &v)
+void SparseMatrix<T>::normalize_vector(vector<double> &v) const
 {
     int i;
     double sq = 0.0;
@@ -577,7 +577,7 @@ void SparseMatrix<T>::normalize_vector(vector<double> &v)
 
 //Computes scalar product between two vectors
 template<typename T>
-double SparseMatrix<T>::scalar_product(vector<double> &u, vector<double> &v)
+double SparseMatrix<T>::scalar_product(vector<double> &u, vector<double> &v) const
 {
     int i;
     double p = 0.0;

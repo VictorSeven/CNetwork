@@ -51,17 +51,17 @@ class DirectedCNetwork
 
 
 
-        double mean_degree(int type);
-        void degree_distribution(vector<int> &distribution, int type, bool normalized = false);
-        void degree_correlation(vector<int> &distribution, vector<double> &correlation,  int type, bool normalized = false);
+        double mean_degree(int type) const;
+        void degree_distribution(vector<int> &distribution, int type, bool normalized = false) const;
+        void degree_correlation(vector<int> &distribution, vector<double> &correlation,  int type, bool normalized = false) const;
 
 
-        void breadth_first_search(int node, vector<int> &dist);
-        void component_nodes(int index, vector<int> &list_nodes, int comp_size = -1);
-        void component_size(vector<int> &node_in_this_component, vector<int> &size_of_components);
-        int largest_component_size();
-        double average_pathlenght();
-        double average_pathlenght_component(int component_index, int comp_size = -1);
+        void breadth_first_search(int node, vector<int> &dist) const;
+        void component_nodes(int index, vector<int> &list_nodes, int comp_size = -1) const;
+        void component_size(vector<int> &node_in_this_component, vector<int> &size_of_components) const;
+        int largest_component_size() const;
+        double average_pathlenght() const;
+        double average_pathlenght_component(int component_index, int comp_size = -1) const;
 
 
 
@@ -72,28 +72,28 @@ class DirectedCNetwork
 
 
 
-        int in_degree(int node_index);
-        int out_degree(int node_index);
-        int degree(int node_index);
+        int in_degree(int node_index) const;
+        int out_degree(int node_index) const;
+        int degree(int node_index) const;
 
 
 
-        vector<int> get_link(int link_index);
-        B get_weight(int link_index);
-        void set_weight(int link_index, B weight);
-        int get_link_index(int from, int to);
+        vector<int> get_link(int link_index) const;
+        B get_weight(int link_index) const;
+        void set_weight(int link_index, B weight) const;
+        int get_link_index(int from, int to) const;
 
 
 
-        int get_node_count();
-        int get_link_count();
+        int get_node_count() const;
+        int get_link_count() const;
 
 
 
-        vector<unsigned int> get_neighs_out(int node_index);
-        vector<unsigned int> get_neighs_in(int node_index);
-        int get_out(int node_index, int k);
-        int get_in(int node_index, int k);
+        vector<unsigned int> get_neighs_out(int node_index) const;
+        vector<unsigned int> get_neighs_in(int node_index) const;
+        int get_out(int node_index, int k) const;
+        int get_in(int node_index, int k) const;
 
 
 
@@ -110,9 +110,9 @@ class DirectedCNetwork
 
 
 
-        void write_graphml(string filename, vector<string> labels = vector<string>());
-        void write_mtx(string filename);
-        void read_mtx(string filename);
+        void write_graphml(string filename, vector<string> labels = vector<string>()) const;
+        void write_mtx(string filename) const;
+        void read_mtx(string filename) const;
 
 
 
@@ -122,7 +122,7 @@ class DirectedCNetwork
 
 
 
-        vector<double> compute_eigenv(double approx_error, int max_it = 20);
+        vector<double> compute_eigenv(double approx_error, int max_it = 20) const;
 
         void clear_network();
 
@@ -433,7 +433,7 @@ bool DirectedCNetwork<T,B>::remove_link(int from, int to)
 * Computes the mean degree of the network
 */
 template <class T, typename B>
-double DirectedCNetwork<T,B>::mean_degree(int type)
+double DirectedCNetwork<T,B>::mean_degree(int type) const
 {
     int i;
     double sum = 0.0; //Get the sum,
@@ -464,7 +464,7 @@ double DirectedCNetwork<T,B>::mean_degree(int type)
 *  the nodes in the network from the target node. dist[j] is distance to j.
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::breadth_first_search(int node, vector<int> &dist)
+void DirectedCNetwork<T,B>::breadth_first_search(int node, vector<int> &dist) const
 {
     int w, r; //Write and read pointers;
     int d; //Current distance
@@ -520,7 +520,7 @@ void DirectedCNetwork<T,B>::breadth_first_search(int node, vector<int> &dist)
 * is known beforehand, it can be given to the algorithm to make it faster.
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, int comp_size)
+void DirectedCNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, int comp_size) const
 {
     int i,j;
 
@@ -581,7 +581,7 @@ void DirectedCNetwork<T,B>::component_nodes(int index, vector<int> &list_nodes, 
 * component_nodes, if needed.
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components)
+void DirectedCNetwork<T,B>::component_size(vector<int> &node_in_this_component, vector<int> &size_of_components) const
 {
     int i,j,k;
 
@@ -636,7 +636,7 @@ void DirectedCNetwork<T,B>::component_size(vector<int> &node_in_this_component, 
 * Use BFS to compute component of network with largest size
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::largest_component_size()
+int DirectedCNetwork<T,B>::largest_component_size() const
 {
     int largest_size = 0;
     int i;
@@ -657,7 +657,7 @@ int DirectedCNetwork<T,B>::largest_component_size()
 * pathlenght of single network component, use average_pathlenght_component instead
 */
 template <class T, typename B>
-double DirectedCNetwork<T,B>::average_pathlenght()
+double DirectedCNetwork<T,B>::average_pathlenght() const
 {
     int i,j; //Counters
 
@@ -697,7 +697,7 @@ double DirectedCNetwork<T,B>::average_pathlenght()
 * to the component. If size of the component is known beforehand, it speeds up the computations
 */
 template <class T, typename B>
-double DirectedCNetwork<T,B>::average_pathlenght_component(int component_index, int comp_size)
+double DirectedCNetwork<T,B>::average_pathlenght_component(int component_index, int comp_size) const
 {
     int i,j;
 
@@ -742,7 +742,7 @@ double DirectedCNetwork<T,B>::average_pathlenght_component(int component_index, 
 * Compute the degree distribution of the network. If you also need the correlations, please use instead degree_correlation.
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::degree_distribution(vector<int> &distribution, int type, bool normalized)
+void DirectedCNetwork<T,B>::degree_distribution(vector<int> &distribution, int type, bool normalized) const
 {
     int i;
     distribution = vector<int>(current_size, 0);
@@ -783,7 +783,7 @@ void DirectedCNetwork<T,B>::degree_distribution(vector<int> &distribution, int t
 * since both quantities are usually needed.
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, int type, bool normalized)
+void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, int type, bool normalized) const
 {
     int i,j,k;
     int index, numneighs;
@@ -883,7 +883,7 @@ void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector
 template <class T, typename B>
 void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
 {
-    //TODO: make faster
+    //TODO: make faster. MAKE SAFER
 
     int i,j,k;
     double p = mean_k / (n - 1.0);
@@ -1137,7 +1137,7 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
 * Returns the in-degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::in_degree(int node_index)
+int DirectedCNetwork<T,B>::in_degree(int node_index) const
 {
     return pointing_in[node_index].size();
 }
@@ -1149,7 +1149,7 @@ int DirectedCNetwork<T,B>::in_degree(int node_index)
 * Returns the out-degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::out_degree(int node_index)
+int DirectedCNetwork<T,B>::out_degree(int node_index) const
 {
     return neighs[node_index].size();
 }
@@ -1162,7 +1162,7 @@ int DirectedCNetwork<T,B>::out_degree(int node_index)
 * Returns the degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::degree(int node_index)
+int DirectedCNetwork<T,B>::degree(int node_index) const
 {
     return pointing_in[node_index].size() + neighs[node_index].size();
 }
@@ -1176,7 +1176,7 @@ int DirectedCNetwork<T,B>::degree(int node_index)
 * it returns -1.
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_link_index(int from, int to)
+int DirectedCNetwork<T,B>::get_link_index(int from, int to) const
 {
     int i,even,odd;
     bool found = false;
@@ -1199,7 +1199,7 @@ int DirectedCNetwork<T,B>::get_link_index(int from, int to)
 * Returns a vector (node_origin, node_destination) given the link index
 */
 template <class T, typename B>
-vector<int> DirectedCNetwork<T,B>::get_link(int link_index)
+vector<int> DirectedCNetwork<T,B>::get_link(int link_index) const
 {
     return {adjm[link_index].x, adjm[link_index].y};
 }
@@ -1212,7 +1212,7 @@ vector<int> DirectedCNetwork<T,B>::get_link(int link_index)
 * Returns the object ("weight") associated with the specified link
 */
 template <class T, typename B>
-B DirectedCNetwork<T,B>::get_weight(int link_index)
+B DirectedCNetwork<T,B>::get_weight(int link_index) const
 {
     return adjm[link_index].value;
 }
@@ -1225,7 +1225,7 @@ B DirectedCNetwork<T,B>::get_weight(int link_index)
 * Sets the object ("weight") associated with the specified link
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::set_weight(int link_index, B weight)
+void DirectedCNetwork<T,B>::set_weight(int link_index, B weight) const
 {
     adjm[link_index].value = weight;
     return;
@@ -1238,7 +1238,7 @@ void DirectedCNetwork<T,B>::set_weight(int link_index, B weight)
 * Returns the total number of nodes initialized in the network
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_node_count()
+int DirectedCNetwork<T,B>::get_node_count() const
 {
     return current_size;
 }
@@ -1250,7 +1250,7 @@ int DirectedCNetwork<T,B>::get_node_count()
 * Returns the total number of links initialized in the network
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_link_count()
+int DirectedCNetwork<T,B>::get_link_count() const
 {
     return link_count;
 }
@@ -1264,7 +1264,7 @@ int DirectedCNetwork<T,B>::get_link_count()
 * Returns the a vector with the indices of the neighbours pointed by the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index)
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index) const
 {
     return neighs[node_index];
 }
@@ -1277,7 +1277,7 @@ vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index)
 * Returns the a vector with the indices of the nodes that point to the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index)
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index) const
 {
     return pointing_in[node_index];
 }
@@ -1291,7 +1291,7 @@ vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index)
 * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_out(int node_index, int k)
+int DirectedCNetwork<T,B>::get_out(int node_index, int k) const
 {
     return neighs[node_index][k];
 }
@@ -1305,7 +1305,7 @@ int DirectedCNetwork<T,B>::get_out(int node_index, int k)
 * Returns the index of the k-th node pointing to the target node.
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_in(int node_index, int k)
+int DirectedCNetwork<T,B>::get_in(int node_index, int k) const
 {
     return pointing_in[node_index][k];
 }
@@ -1468,7 +1468,7 @@ string DirectedCNetwork<T,B>::get_value_s(string name, int index)
 * recognized as a node identifier in software like Gephi. For compatibility, MTX format is preferred
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::write_graphml(string filename, vector<string> labels)
+void DirectedCNetwork<T,B>::write_graphml(string filename, vector<string> labels) const
 {
     int i,j,k;
     ofstream output;
@@ -1688,7 +1688,7 @@ void DirectedCNetwork<T,B>::write_graphml(string filename, vector<string> labels
 * This is compatible with most network-analysis software, and it is easy to read from any language.
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::write_mtx(string filename)
+void DirectedCNetwork<T,B>::write_mtx(string filename) const
 {
     ofstream output;
     int i;
@@ -1723,7 +1723,7 @@ void DirectedCNetwork<T,B>::write_mtx(string filename)
 * This function reads any MTX-like format
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::read_mtx(string filename)
+void DirectedCNetwork<T,B>::read_mtx(string filename) const
 {
     //Destroy this object and create new network
     clear_network(max_net_size);
@@ -1781,7 +1781,7 @@ void DirectedCNetwork<T,B>::read_mtx(string filename)
 * has the largest eigenvalue as the last element. The other values are the eigenvector.
 */
 template <class T, typename B>
-vector<double> DirectedCNetwork<T,B>::compute_eigenv(double approx_error, int max_it)
+vector<double> DirectedCNetwork<T,B>::compute_eigenv(double approx_error, int max_it) const
 {
     return adjm.dom_eigen(approx_error, max_it);
 }

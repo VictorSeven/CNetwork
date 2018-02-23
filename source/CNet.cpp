@@ -31,27 +31,32 @@ class CNetwork: public DirectedCNetwork<T,B>
         bool remove_link(int from, int to);
 
 
-        double mean_degree();
+        double mean_degree() const;
 
 
-        double clustering_coef(int node_index);
-        double mean_clustering_coef();
+        double clustering_coef(int node_index) const;
+        double mean_clustering_coef() const;
 
 
-        void degree_distribution(vector<int> &distribution, bool normalized = false);
-        void degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized = false);
+        void degree_distribution(vector<int> &distribution, bool normalized = false) const;
+        void degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized = false) const;
 
 
-        int in_degree(int node_index);
-        int out_degree(int node_index);
-        int degree(int node_index);
+        int in_degree(int node_index) const;
+        int out_degree(int node_index) const;
+        int degree(int node_index) const;
 
 
-        int get_link_index(int from, int to);
+        vector<unsigned int> get_neighs_out(int node_index) const;
+        vector<unsigned int> get_neighs_in(int node_index) const;
+        int get_out(int node_index, int k) const;
+        int get_in(int node_index, int k) const;
+
+        int get_link_index(int from, int to) const;
 
 
-        vector<unsigned int> get_neighs(int node_index);
-        int get_neigh_at(int node_index, int k);
+        vector<unsigned int> get_neighs(int node_index) const;
+        int get_neigh_at(int node_index, int k) const;
 
         CNetwork(int max_size);
 
@@ -284,7 +289,7 @@ bool CNetwork<T,B>::remove_link(int from, int to)
 * Computes the mean degree of the network
 */
 template <class T, typename B>
-double CNetwork<T,B>::mean_degree()
+double CNetwork<T,B>::mean_degree() const
 {
     return DirectedCNetwork<T,B>::mean_degree(this->TOTAL_DEGREE);
 }
@@ -297,7 +302,7 @@ double CNetwork<T,B>::mean_degree()
 * Compute a clustering coefficient of a target node.
 */
 template <class T, typename B>
-double CNetwork<T,B>::clustering_coef(int node_index)
+double CNetwork<T,B>::clustering_coef(int node_index) const
 {
     if (degree(node_index) > 1) //If we have more than one neighbour...
     {
@@ -338,7 +343,7 @@ double CNetwork<T,B>::clustering_coef(int node_index)
 * It is not the same as the one computed counting triangles.
 */
 template <class T, typename B>
-double CNetwork<T,B>::mean_clustering_coef()
+double CNetwork<T,B>::mean_clustering_coef() const
 {
     int i;
     double sum = 0.0; //Get the sum,
@@ -359,7 +364,7 @@ double CNetwork<T,B>::mean_clustering_coef()
 * Compute the degree distribution of the network. If you also need the correlations, please use instead degree_correlation.
 */
 template <class T, typename B>
-void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normalized)
+void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normalized) const
 {
     DirectedCNetwork<T,B>::degree_distribution(distribution, this->TOTAL_DEGREE, normalized);
     return;
@@ -375,7 +380,7 @@ void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normaliz
 * since both quantities are usually needed.
 */
 template <class T, typename B>
-void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized)
+void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized) const
 {
     DirectedCNetwork<T,B>::degree_correlation(distribution, this->TOTAL_DEGREE, normalized);
     return;
@@ -401,7 +406,7 @@ void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double>
 * Returns the degree of the target node
 */
 template <class T, typename B>
-int CNetwork<T,B>::degree(int node_index)
+int CNetwork<T,B>::degree(int node_index) const
 {
     return this->neighs[node_index].size();
 }
@@ -413,7 +418,7 @@ int CNetwork<T,B>::degree(int node_index)
 * Returns the in-degree of the target node
 */
 template <class T, typename B>
-int CNetwork<T,B>::in_degree(int node_index)
+int CNetwork<T,B>::in_degree(int node_index) const
 {
     return this->neighs[node_index].size();
 }
@@ -425,10 +430,66 @@ int CNetwork<T,B>::in_degree(int node_index)
 * Returns the out-degree of the target node
 */
 template <class T, typename B>
-int CNetwork<T,B>::out_degree(int node_index)
+int CNetwork<T,B>::out_degree(int node_index) const
 {
     return this->neighs[node_index].size();
 }
+
+
+/** \brief Get neighbours of given node
+*  \param node_index: target node
+*  \return vector containing the neighbours of node_index
+*
+* Returns the a vector with the indices of the neighbours of node_index
+*/
+template <class T, typename B>
+vector<unsigned int> CNetwork<T,B>::get_neighs_out(int node_index) const
+{
+    return this->neighs[node_index];
+}
+
+
+/** \brief Get neighbours of given node
+*  \param node_index: target node
+*  \return vector containing the neighbours of node_index
+*
+* Returns the a vector with the indices of the neighbours of node_index
+*/
+template <class T, typename B>
+vector<unsigned int> CNetwork<T,B>::get_neighs_in(int node_index) const
+{
+    return this->neighs[node_index];
+}
+
+
+/** \brief Selects the k-th neighbour of node_index
+*  \param node_index: target node
+*  \param k: node to be selected
+*  \return index of the k-th neighbour of the list
+*
+* Returns the index of the k-th neighbour of the given node.
+*/
+template <class T, typename B>
+int CNetwork<T,B>::get_out(int node_index, int k) const
+{
+    return this->neighs[node_index][k];
+}
+
+
+/** \brief Selects the k-th neighbour of node_index
+*  \param node_index: target node
+*  \param k: node to be selected
+*  \return index of the k-th neighbour of the list
+*
+* Returns the index of the k-th neighbour of the given node.
+*/
+template <class T, typename B>
+int CNetwork<T,B>::get_in(int node_index, int k) const
+{
+    return this->neighs[node_index][k];
+}
+
+
 
 /** \brief Gets a link between two specified nodes
 *  \param from: origin node
@@ -439,7 +500,7 @@ int CNetwork<T,B>::out_degree(int node_index)
 * it returns -1.
 */
 template <class T, typename B>
-int CNetwork<T,B>::get_link_index(int from, int to)
+int CNetwork<T,B>::get_link_index(int from, int to) const
 {
     int i,even,odd;
     bool found = false;
@@ -462,7 +523,7 @@ int CNetwork<T,B>::get_link_index(int from, int to)
 * Returns the a vector with the indices of the neighbours of the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index)
+vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index) const
 {
     return this->neighs[node_index];
 }
@@ -476,7 +537,7 @@ vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index)
 * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
 */
 template <class T, typename B>
-int CNetwork<T,B>::get_neigh_at(int node_index, int k)
+int CNetwork<T,B>::get_neigh_at(int node_index, int k) const
 {
     return this->neighs[node_index][k];
 }
