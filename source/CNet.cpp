@@ -25,10 +25,13 @@ class CNetwork: public DirectedCNetwork<T,B>
 {
     public:
 
+
+        void add_nodes(int n);
         bool remove_node(int index);
         void add_link(int from, int to);
         void add_link(int from, int to, B w);
         bool remove_link(int from, int to);
+        void remove_link(int index_link);
 
 
         double mean_degree() const;
@@ -124,6 +127,33 @@ void CNetwork<T,B>::clear_network()
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
+
+
+/** \brief Add new nodes to the network
+*  \param n: number of nodes to add
+*
+* Add new nodes to the network
+*/
+template <class T, typename B>
+void CNetwork<T,B>::add_nodes(int n)
+{
+    int old_size = this->current_size; //Store old size
+    int next_size = old_size + n; //New size of the network
+
+    //Set the size to the maximum if it exceeds it
+    this->current_size = next_size > this->max_net_size ? this->max_net_size : next_size;
+
+    this->value.resize(this->current_size); //Increase the number of value.size without adding any element to it
+
+    for (int i = old_size; i < this->current_size; i++)
+    {
+        this->neighs.push_back(vector<unsigned int>()); //Add a new container for neighbours
+    }
+    return;
+}
+
+
+
 
 /** \brief Remove a node from the network
 *  \param index: index of the node to remove
@@ -275,6 +305,47 @@ bool CNetwork<T,B>::remove_link(int from, int to)
         return true;
     }
     else return false;
+
+}
+
+
+/** \brief Remove a link from the network
+*  \param index: index of the link to erase
+*  \return false if there is no link between from and to.
+*
+* Remove the a link between nodes from and to, if it exist.
+*/
+template <class T, typename B>
+void CNetwork<T,B>::remove_link(int index_link)
+{
+    unsigned int from, to;
+    vector<int> aux;
+
+    //Get who are from and to nodes
+    aux = this->get_link(index_link);
+    from = aux[0];
+    to = aux[1];
+
+    this->adjm.erase(index_link); //Delete the link
+    this->link_count -= 1;
+
+
+    //cout << from << "  " << to << endl;
+
+    auto index_it = find(this->neighs[from].begin(), this->neighs[from].end(), to); //Relative index of TO in terms of FROM
+    int index_neigh = distance(this->neighs[from].begin(), index_it); //Get the relative index as an int
+
+    this->neighs[from].erase(this->neighs[from].begin()+index_neigh); //Erase the node it pointed in the neighbours list
+
+    //Do the same process, but now in the other node, the to one.
+    //Since this node was in the neigh list of FROM, we know that FROM has to be in the pointing_in list of TO
+    //That's why we don't check again if index_it < neighs end
+    index_it = find(this->neighs[to].begin(), this->neighs[to].end(), from); //find(neighs[to].begin(), neighs[to].end(), from);
+    index_neigh = distance(this->neighs[to].begin(), index_it);
+
+    this->neighs[to].erase(this->neighs[to].begin()+index_neigh);
+
+    return;
 
 }
 

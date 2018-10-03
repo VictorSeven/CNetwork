@@ -47,7 +47,7 @@ class DirectedCNetwork
         void add_link(int from, int to);
         void add_link(int from, int to, B w);
         bool remove_link(int from, int to);
-
+        void remove_link(int index_link);
 
 
 
@@ -422,6 +422,46 @@ bool DirectedCNetwork<T,B>::remove_link(int from, int to)
 }
 
 
+
+/** \brief Remove a link from the network
+*  \param index_link: Index of the desired link to erase
+*
+* Remove the selected link
+*/
+template <class T, typename B>
+void DirectedCNetwork<T,B>::remove_link(int index_link)
+{
+    unsigned int from, to;
+    vector<int> aux;
+
+    //Get who are from and to nodes
+    aux = get_link(index_link);
+    from = aux[0];
+    to = aux[1];
+
+    adjm.erase(index_link); //Delete the link
+    link_count -= 1;
+
+
+    //cout << from << "  " << to << endl;
+
+    auto index_it = find(neighs[from].begin(), neighs[from].end(), to); //Relative index of TO in terms of FROM
+    int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
+
+    neighs[from].erase(neighs[from].begin()+index_neigh); //Erase the node it pointed in the neighbours list
+
+    //Do the same process, but now in the other node, the to one.
+    //Since this node was in the neigh list of FROM, we know that FROM has to be in the pointing_in list of TO
+    //That's why we don't check again if index_it < neighs end
+    index_it = find(pointing_in[to].begin(), pointing_in[to].end(), from); //find(neighs[to].begin(), neighs[to].end(), from);
+    index_neigh = distance(pointing_in[to].begin(), index_it);
+
+    pointing_in[to].erase(pointing_in[to].begin()+index_neigh);
+
+    return;
+
+}
+
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
@@ -439,7 +479,7 @@ double DirectedCNetwork<T,B>::mean_degree(int type) const
     double sum = 0.0; //Get the sum,
 
     //Declare pointer to a function. *f is a function, so f points to memory location
-    int (DirectedCNetwork<T,B>::*deg_fun)(int) ;
+    int (DirectedCNetwork<T,B>::*deg_fun)(int) const;
 
     //Gets the correct function for computing degrees
     if (type == 0) deg_fun = &DirectedCNetwork<T,B>::in_degree; //Asign the pointer to a memory reference
