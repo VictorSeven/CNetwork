@@ -831,8 +831,8 @@ void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector
 
     int maxdegree = 0;
 
-    int (DirectedCNetwork<T,B>::*deg_fun)(int);
-    int(DirectedCNetwork<T,B>::*neigh_fun)(int,int);
+    int (DirectedCNetwork<T,B>::*deg_fun)(int) const;
+    int(DirectedCNetwork<T,B>::*neigh_fun)(int,int) const;
 
     //Gets the correct function for computing degrees
     if (type == 0)

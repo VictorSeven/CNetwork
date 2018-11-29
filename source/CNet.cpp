@@ -61,6 +61,9 @@ class CNetwork: public DirectedCNetwork<T,B>
         vector<unsigned int> get_neighs(int node_index) const;
         int get_neigh_at(int node_index, int k) const;
 
+        void create_2d_lattice(const int L);
+
+
         CNetwork(int max_size);
 
         void clear_network();
@@ -462,6 +465,57 @@ void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double>
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
+
+
+/** \brief Creates a 2d lattice.
+*
+* This method creates a regular 2d lattice with 4 neighbours. It is useful to
+* compare networks to lattices.
+*/
+template<class T, typename B>
+void CNetwork<T,B>::create_2d_lattice(const int L)
+{
+    int i,j,x,y;
+    int u,d,l,r;
+
+    add_nodes(L*L); //Create the nodes
+
+    //To set coordinates in the desired order
+    const int UP = 2;
+    const int DOWN = 3;
+    const int LEFT = 1;
+    const int RIGHT = 0;
+
+    vector<int> coor(4);
+
+    //Store links for each node
+    for (i=0; i < this->current_size; i++)
+    {
+        //Get x,y coords of node in this lattice
+        x = i % L;
+        y = i / L;
+
+        //Coordinates of right, left, up and down, using that
+        //index = x + L * y
+        coor[RIGHT] = (x+1)%L + L*y;
+        coor[LEFT] = x > 0 ? x-1 + L*y : L-1 + L*y;
+        coor[UP] = x + L * ((y+1) % L);
+        coor[DOWN] = y > 0 ? x + L*(y-1) : x + L*(L-1);
+
+
+        //Create the links from this node. This differs from add_link in the fact we
+        //do NOT create explicitly the link "to->from". It is created later when the "to" node is visited.
+        for (j=0; j < 4; j++)
+        {
+            this->adjm.push_back(data<bool>(i, coor[j], true));
+            this->neighs[i].push_back(coor[j]);
+        }
+    }
+
+    this->link_count = 2*this->current_size; //Set manually the number of links
+
+    return;
+}
 
 
 
