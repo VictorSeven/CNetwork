@@ -47,7 +47,7 @@ class DirectedCNetwork
         void add_link(int from, int to);
         void add_link(int from, int to, B w);
         bool remove_link(int from, int to);
-
+        void remove_link(int index_link);
 
 
 
@@ -72,9 +72,9 @@ class DirectedCNetwork
 
 
 
-        int in_degree(int node_index) const;
-        int out_degree(int node_index) const;
-        int degree(int node_index) const;
+        int in_degree(const int node_index) const;
+        int out_degree(const int node_index) const;
+        int degree(const int node_index) const;
 
 
 
@@ -90,10 +90,10 @@ class DirectedCNetwork
 
 
 
-        vector<unsigned int> get_neighs_out(int node_index) const;
-        vector<unsigned int> get_neighs_in(int node_index) const;
-        int get_out(int node_index, int k) const;
-        int get_in(int node_index, int k) const;
+        vector<unsigned int> get_neighs_out(const int node_index) const;
+        vector<unsigned int> get_neighs_in(const int node_index) const;
+        int get_out(const int node_index, const int k) const;
+        int get_in(const int node_index, const int k) const;
 
 
 
@@ -117,6 +117,8 @@ class DirectedCNetwork
 
 
         T& operator[](const int& i);
+        T operator[](const int& i) const;
+        vector<T> get_values() const;
         DirectedCNetwork(int max_size);
 
 
@@ -221,6 +223,30 @@ template <class T, typename B>
 T& DirectedCNetwork<T,B>::operator[](const int& i)
 {
     return value[i];
+}
+
+/** \brief Bracket operator
+*  \param i: index
+*  \return reference to the value stored in i-th node
+*
+* Access the value stored in the i-th node.
+*/
+template <class T, typename B>
+T DirectedCNetwork<T,B>::operator[](const int& i) const
+{
+    return value[i];
+}
+
+
+/** \brief Get the values stored in nodes
+*  \return Copy of the values stored, as a vector
+*
+* Get the values stored in nodes as a vector
+*/
+template <class T, typename B>
+vector<T> DirectedCNetwork<T,B>::get_values() const
+{
+    return value;
 }
 
 // ========================================================================================================
@@ -422,6 +448,46 @@ bool DirectedCNetwork<T,B>::remove_link(int from, int to)
 }
 
 
+
+/** \brief Remove a link from the network
+*  \param index_link: Index of the desired link to erase
+*
+* Remove the selected link
+*/
+template <class T, typename B>
+void DirectedCNetwork<T,B>::remove_link(int index_link)
+{
+    unsigned int from, to;
+    vector<int> aux;
+
+    //Get who are from and to nodes
+    aux = get_link(index_link);
+    from = aux[0];
+    to = aux[1];
+
+    adjm.erase(index_link); //Delete the link
+    link_count -= 1;
+
+
+    //cout << from << "  " << to << endl;
+
+    auto index_it = find(neighs[from].begin(), neighs[from].end(), to); //Relative index of TO in terms of FROM
+    int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
+
+    neighs[from].erase(neighs[from].begin()+index_neigh); //Erase the node it pointed in the neighbours list
+
+    //Do the same process, but now in the other node, the to one.
+    //Since this node was in the neigh list of FROM, we know that FROM has to be in the pointing_in list of TO
+    //That's why we don't check again if index_it < neighs end
+    index_it = find(pointing_in[to].begin(), pointing_in[to].end(), from); //find(neighs[to].begin(), neighs[to].end(), from);
+    index_neigh = distance(pointing_in[to].begin(), index_it);
+
+    pointing_in[to].erase(pointing_in[to].begin()+index_neigh);
+
+    return;
+
+}
+
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
@@ -439,7 +505,7 @@ double DirectedCNetwork<T,B>::mean_degree(int type) const
     double sum = 0.0; //Get the sum,
 
     //Declare pointer to a function. *f is a function, so f points to memory location
-    int (DirectedCNetwork<T,B>::*deg_fun)(int) ;
+    int (DirectedCNetwork<T,B>::*deg_fun)(int) const;
 
     //Gets the correct function for computing degrees
     if (type == 0) deg_fun = &DirectedCNetwork<T,B>::in_degree; //Asign the pointer to a memory reference
@@ -766,7 +832,7 @@ void DirectedCNetwork<T,B>::degree_distribution(vector<int> &distribution, int t
     {
         for (i=0; i < distribution.size(); i++)
         {
-            distribution[i] /= link_count;
+            distribution[i] /= 1.0*link_count;
         }
     }
     return;
@@ -791,8 +857,8 @@ void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector
 
     int maxdegree = 0;
 
-    int (DirectedCNetwork<T,B>::*deg_fun)(int);
-    int(DirectedCNetwork<T,B>::*neigh_fun)(int,int);
+    int (DirectedCNetwork<T,B>::*deg_fun)(int) const;
+    int(DirectedCNetwork<T,B>::*neigh_fun)(int,int) const;
 
     //Gets the correct function for computing degrees
     if (type == 0)
@@ -1137,7 +1203,7 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
 * Returns the in-degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::in_degree(int node_index) const
+int DirectedCNetwork<T,B>::in_degree(const int node_index) const
 {
     return pointing_in[node_index].size();
 }
@@ -1149,7 +1215,7 @@ int DirectedCNetwork<T,B>::in_degree(int node_index) const
 * Returns the out-degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::out_degree(int node_index) const
+int DirectedCNetwork<T,B>::out_degree(const int node_index) const
 {
     return neighs[node_index].size();
 }
@@ -1162,7 +1228,7 @@ int DirectedCNetwork<T,B>::out_degree(int node_index) const
 * Returns the degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::degree(int node_index) const
+int DirectedCNetwork<T,B>::degree(const int node_index) const
 {
     return pointing_in[node_index].size() + neighs[node_index].size();
 }
@@ -1264,7 +1330,7 @@ int DirectedCNetwork<T,B>::get_link_count() const
 * Returns the a vector with the indices of the neighbours pointed by the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index) const
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(const int node_index) const
 {
     return neighs[node_index];
 }
@@ -1277,7 +1343,7 @@ vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index) const
 * Returns the a vector with the indices of the nodes that point to the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index) const
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(const int node_index) const
 {
     return pointing_in[node_index];
 }
@@ -1291,7 +1357,7 @@ vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index) const
 * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_out(int node_index, int k) const
+int DirectedCNetwork<T,B>::get_out(const int node_index, const int k) const
 {
     return neighs[node_index][k];
 }
@@ -1305,7 +1371,7 @@ int DirectedCNetwork<T,B>::get_out(int node_index, int k) const
 * Returns the index of the k-th node pointing to the target node.
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_in(int node_index, int k) const
+int DirectedCNetwork<T,B>::get_in(const int node_index, const int k) const
 {
     return pointing_in[node_index][k];
 }

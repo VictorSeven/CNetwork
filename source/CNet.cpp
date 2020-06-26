@@ -25,10 +25,13 @@ class CNetwork: public DirectedCNetwork<T,B>
 {
     public:
 
+
+        void add_nodes(int n);
         bool remove_node(int index);
         void add_link(int from, int to);
         void add_link(int from, int to, B w);
         bool remove_link(int from, int to);
+        void remove_link(int index_link);
 
 
         double mean_degree() const;
@@ -42,21 +45,24 @@ class CNetwork: public DirectedCNetwork<T,B>
         void degree_correlation(vector<int> &distribution, vector<double> &correlation, bool normalized = false) const;
 
 
-        int in_degree(int node_index) const;
-        int out_degree(int node_index) const;
-        int degree(int node_index) const;
+        int in_degree(const int node_index) const;
+        int out_degree(const int node_index) const;
+        int degree(const int node_index) const;
 
 
-        vector<unsigned int> get_neighs_out(int node_index) const;
-        vector<unsigned int> get_neighs_in(int node_index) const;
-        int get_out(int node_index, int k) const;
-        int get_in(int node_index, int k) const;
+        vector<unsigned int> get_neighs_out(const int node_index) const;
+        vector<unsigned int> get_neighs_in(const int node_index) const;
+        int get_out(const int node_index, const int k) const;
+        int get_in(const int node_index, const int k) const;
 
-        int get_link_index(int from, int to) const;
+        int get_link_index(const int from, const int to) const;
 
 
-        vector<unsigned int> get_neighs(int node_index) const;
-        int get_neigh_at(int node_index, int k) const;
+        vector<unsigned int> get_neighs(const int node_index) const;
+        int get_neigh_at(const int node_index, const int k) const;
+
+        void create_2d_lattice(const int L, bool eight=false, bool periodic=true);
+        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789);
 
         CNetwork(int max_size);
 
@@ -124,6 +130,33 @@ void CNetwork<T,B>::clear_network()
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
+
+
+/** \brief Add new nodes to the network
+*  \param n: number of nodes to add
+*
+* Add new nodes to the network
+*/
+template <class T, typename B>
+void CNetwork<T,B>::add_nodes(int n)
+{
+    int old_size = this->current_size; //Store old size
+    int next_size = old_size + n; //New size of the network
+
+    //Set the size to the maximum if it exceeds it
+    this->current_size = next_size > this->max_net_size ? this->max_net_size : next_size;
+
+    this->value.resize(this->current_size); //Increase the number of value.size without adding any element to it
+
+    for (int i = old_size; i < this->current_size; i++)
+    {
+        this->neighs.push_back(vector<unsigned int>()); //Add a new container for neighbours
+    }
+    return;
+}
+
+
+
 
 /** \brief Remove a node from the network
 *  \param index: index of the node to remove
@@ -279,6 +312,47 @@ bool CNetwork<T,B>::remove_link(int from, int to)
 }
 
 
+/** \brief Remove a link from the network
+*  \param index: index of the link to erase
+*  \return false if there is no link between from and to.
+*
+* Remove the a link between nodes from and to, if it exist.
+*/
+template <class T, typename B>
+void CNetwork<T,B>::remove_link(int index_link)
+{
+    unsigned int from, to;
+    vector<int> aux;
+
+    //Get who are from and to nodes
+    aux = this->get_link(index_link);
+    from = aux[0];
+    to = aux[1];
+
+    this->adjm.erase(index_link); //Delete the link
+    this->link_count -= 1;
+
+
+    //cout << from << "  " << to << endl;
+
+    auto index_it = find(this->neighs[from].begin(), this->neighs[from].end(), to); //Relative index of TO in terms of FROM
+    int index_neigh = distance(this->neighs[from].begin(), index_it); //Get the relative index as an int
+
+    this->neighs[from].erase(this->neighs[from].begin()+index_neigh); //Erase the node it pointed in the neighbours list
+
+    //Do the same process, but now in the other node, the to one.
+    //Since this node was in the neigh list of FROM, we know that FROM has to be in the pointing_in list of TO
+    //That's why we don't check again if index_it < neighs end
+    index_it = find(this->neighs[to].begin(), this->neighs[to].end(), from); //find(neighs[to].begin(), neighs[to].end(), from);
+    index_neigh = distance(this->neighs[to].begin(), index_it);
+
+    this->neighs[to].erase(this->neighs[to].begin()+index_neigh);
+
+    return;
+
+}
+
+
 // ========================================================================================================
 // ========================================================================================================
 // ========================================================================================================
@@ -393,6 +467,183 @@ void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double>
 // ========================================================================================================
 
 
+/** \brief Creates a 2d lattice.
+*
+* This method creates a regular 2d lattice with 4 neighbours. It is useful to
+* compare networks to lattices.
+*/
+template<class T, typename B>
+void CNetwork<T,B>::create_2d_lattice(const int L, bool eight, bool periodic)
+{
+    int i,j,x,y, xm, ym, xp, yp;
+    int u,d,l,r;
+
+    add_nodes(L*L); //Create the nodes
+
+    //To set coordinates in the desired order
+    const int UP = 2;
+    const int DOWN = 3;
+    const int LEFT = 1;
+    const int RIGHT = 0;
+
+
+    if (!eight)
+    {
+        vector<int> coor(4);
+
+        if (periodic)
+        {
+            //Store links for each node
+            for (i=0; i < this->current_size; i++)
+            {
+                //Get x,y coords of node in this lattice
+                x = i % L;
+                y = i / L;
+
+                //Coordinates of right, left, up and down, using that
+                //index = x + L * y
+                coor[RIGHT] = (x+1)%L + L*y;
+                coor[LEFT] = x > 0 ? x-1 + L*y : L-1 + L*y;
+                coor[UP] = x + L * ((y+1) % L);
+                coor[DOWN] = y > 0 ? x + L*(y-1) : x + L*(L-1);
+
+
+                //Create the links from this node. This differs from add_link in the fact we
+                //do NOT create explicitly the link "to->from". It is created later when the "to" node is visited.
+                for (j=0; j < 4; j++)
+                {
+                    this->adjm.push_back(data<bool>(i, coor[j], true));
+                    this->neighs[i].push_back(coor[j]);
+                }
+            }
+
+            this->link_count = 2*this->current_size; //Set manually the number of links
+        }
+        else
+        {
+            for (x = 0; x < L-1; x++)
+            {
+                for (y=0; y < L-1; y++)
+                {
+                    this->adjm.push_back(data<bool>(x+y*L, x+1+y*L, true));
+                    this->neighs[x+y*L].push_back( x+1+y*L);
+                    this->adjm.push_back(data<bool>(x+1+y*L, x+y*L, true));
+                    this->neighs[x+1+y*L].push_back( x+y*L);
+
+                    this->adjm.push_back(data<bool>(x+y*L, x+(y+1)*L, true));
+                    this->neighs[x+y*L].push_back(x+(y+1)*L);
+                    this->adjm.push_back(data<bool>(x+(y+1)*L, x+y*L, true));
+                    this->neighs[x+(y+1)*L].push_back(x+y*L);
+                }
+            }
+
+            for (i=0; i < L-1; i++)
+            {
+                this->adjm.push_back(data<bool>(L-1+i*L, L-1+(i+1)*L, true));
+                this->neighs[L-1+i*L].push_back(L-1+(i+1)*L);
+                this->adjm.push_back(data<bool>(L-1+(i+1)*L, L-1+i*L, true));
+                this->neighs[L-1+(i+1)*L].push_back(L-1+i*L);
+
+                this->adjm.push_back(data<bool>(i+(L-1)*L, i+1+(L-1)*L, true));
+                this->neighs[i+(L-1)*L].push_back(i+1+(L-1)*L);
+                this->adjm.push_back(data<bool>(i+1+(L-1)*L, i+(L-1)*L, true));
+                this->neighs[i+1+(L-1)*L].push_back(i+(L-1)*L);
+
+            }
+            this->link_count = 2*L*(L-1); //Set manually the number of links
+        }
+
+    }
+    else //8-neighbour lattice
+    {
+        vector<int> coor(8);
+
+        const int UPRI = 4;
+        const int UPLE = 5;
+        const int DORI = 6;
+        const int DOLE = 7;
+
+
+        //Store links for each node
+        for (i=0; i < this->current_size; i++)
+        {
+            //Get x,y coords of node in this lattice
+            x = i % L;
+            y = i / L;
+
+            //Coordinates of right, left, up and down, using that
+            //index = x + L * y
+            xm = x > 0 ? x-1 : L-1;
+            ym = y > 0 ? y-1 : L-1;
+            xp = (x+1) % L;
+            yp = (y+1) % L;
+
+            coor[RIGHT] = xp + L*y;
+            coor[LEFT] = xm + L*y;
+            coor[UP] = x + L*yp;
+            coor[DOWN] = x + L*ym;
+
+            coor[UPRI] = xp+ L*yp;
+            coor[UPLE] =  xm + L*yp;
+            coor[DORI] = xp + L*ym;
+            coor[DOLE] = xm + L*ym;
+
+
+            //Create the links from this node. This differs from add_link in the fact we
+            //do NOT create explicitly the link "to->from". It is created later when the "to" node is visited.
+            for (j=0; j < 8; j++)
+            {
+                this->adjm.push_back(data<bool>(i, coor[j], true));
+                this->neighs[i].push_back(coor[j]);
+            }
+        }
+
+        this->link_count = 4*this->current_size; //Set manually the number of links
+    }
+
+
+
+    return;
+}
+
+
+/** \brief Generates a random Erdos-Renyi network
+*  \param nodes: nodes of the network
+*  \param mean_k: average degree
+*  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*
+* Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration.
+*/
+template <class T, typename B>
+void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
+{
+    //TODO: make faster. MAKE SAFER
+
+    int i,j,k;
+    double p = mean_k / (n - 1.0);
+
+    mt19937 gen(random_seed);; //Create the generator
+    uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
+    uniform_int_distribution<int>  index(0,n-1); //-1 because closed interval for ints
+
+    add_nodes(n); //Create the nodes
+
+    //For the n (n-1) / 2 pairs, link them with probability p
+    for (i=0; i < this->current_size; i++)
+    {
+        for (j=i+1; j < this->current_size; j++)
+        {
+            //With probability p, add link. 
+            if (ran_u(gen) <= p) add_link(i, j);
+        }
+    }
+
+    return;
+
+}
+
+
+
 
 // ========================================================================================================
 // ========================================================================================================
@@ -406,7 +657,7 @@ void CNetwork<T,B>::degree_correlation(vector<int> &distribution, vector<double>
 * Returns the degree of the target node
 */
 template <class T, typename B>
-int CNetwork<T,B>::degree(int node_index) const
+int CNetwork<T,B>::degree(const int node_index) const
 {
     return this->neighs[node_index].size();
 }
@@ -418,7 +669,7 @@ int CNetwork<T,B>::degree(int node_index) const
 * Returns the in-degree of the target node
 */
 template <class T, typename B>
-int CNetwork<T,B>::in_degree(int node_index) const
+int CNetwork<T,B>::in_degree(const int node_index) const
 {
     return this->neighs[node_index].size();
 }
@@ -430,7 +681,7 @@ int CNetwork<T,B>::in_degree(int node_index) const
 * Returns the out-degree of the target node
 */
 template <class T, typename B>
-int CNetwork<T,B>::out_degree(int node_index) const
+int CNetwork<T,B>::out_degree(const int node_index) const
 {
     return this->neighs[node_index].size();
 }
@@ -443,7 +694,7 @@ int CNetwork<T,B>::out_degree(int node_index) const
 * Returns the a vector with the indices of the neighbours of node_index
 */
 template <class T, typename B>
-vector<unsigned int> CNetwork<T,B>::get_neighs_out(int node_index) const
+vector<unsigned int> CNetwork<T,B>::get_neighs_out(const int node_index) const
 {
     return this->neighs[node_index];
 }
@@ -456,7 +707,7 @@ vector<unsigned int> CNetwork<T,B>::get_neighs_out(int node_index) const
 * Returns the a vector with the indices of the neighbours of node_index
 */
 template <class T, typename B>
-vector<unsigned int> CNetwork<T,B>::get_neighs_in(int node_index) const
+vector<unsigned int> CNetwork<T,B>::get_neighs_in(const int node_index) const
 {
     return this->neighs[node_index];
 }
@@ -470,7 +721,7 @@ vector<unsigned int> CNetwork<T,B>::get_neighs_in(int node_index) const
 * Returns the index of the k-th neighbour of the given node.
 */
 template <class T, typename B>
-int CNetwork<T,B>::get_out(int node_index, int k) const
+int CNetwork<T,B>::get_out(const int node_index, const int k) const
 {
     return this->neighs[node_index][k];
 }
@@ -484,7 +735,7 @@ int CNetwork<T,B>::get_out(int node_index, int k) const
 * Returns the index of the k-th neighbour of the given node.
 */
 template <class T, typename B>
-int CNetwork<T,B>::get_in(int node_index, int k) const
+int CNetwork<T,B>::get_in(const int node_index, const int k) const
 {
     return this->neighs[node_index][k];
 }
@@ -500,7 +751,7 @@ int CNetwork<T,B>::get_in(int node_index, int k) const
 * it returns -1.
 */
 template <class T, typename B>
-int CNetwork<T,B>::get_link_index(int from, int to) const
+int CNetwork<T,B>::get_link_index(const int from, const int to) const
 {
     int i,even,odd;
     bool found = false;
@@ -523,7 +774,7 @@ int CNetwork<T,B>::get_link_index(int from, int to) const
 * Returns the a vector with the indices of the neighbours of the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index) const
+vector<unsigned int> CNetwork<T,B>::get_neighs(const int node_index) const
 {
     return this->neighs[node_index];
 }
@@ -537,7 +788,7 @@ vector<unsigned int> CNetwork<T,B>::get_neighs(int node_index) const
 * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
 */
 template <class T, typename B>
-int CNetwork<T,B>::get_neigh_at(int node_index, int k) const
+int CNetwork<T,B>::get_neigh_at(const int node_index, const int k) const
 {
     return this->neighs[node_index][k];
 }
