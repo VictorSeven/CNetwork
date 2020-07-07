@@ -68,7 +68,7 @@ class DirectedCNetwork
         void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed = 123456789);
         void create_configurational(int nodes, int kmin, double gamma, unsigned int random_seed);
         void create_watts_strogatz(int nodes, int regular_connections, double p, unsigned int random_seed);
-        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789);
+        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=-1);
 
 
 
@@ -120,6 +120,7 @@ class DirectedCNetwork
         T operator[](const int& i) const;
         vector<T> get_values() const;
         DirectedCNetwork(int max_size);
+        DirectedCNetwork(const vector<DirectedCNetwork> &submodules);
 
 
 
@@ -182,6 +183,50 @@ DirectedCNetwork<T,B>::DirectedCNetwork(int max_size)
     max_net_size = max_size; //Set the max size of the network
     clear_network(); //Initialize everything
     return;
+}
+
+
+/** \brief DirectedCNetwork constructor via submodules
+*  \param submodules: a list of networks to build this network from
+*
+* Creates a new DirectedCNetwork which contains all the previous submodules, generating
+* a graph with disconnected sub-graphs.
+*/
+template <class T, typename B>
+DirectedCNetwork<T,B>::DirectedCNetwork(const vector<DirectedCNetwork<T,B> > &submodules)
+{
+    int i,j,k;
+    directed = true; 
+
+    //Get size and clear network
+    max_net_size = 0;
+    for (i=0; i < submodules.size(); i++) max_net_size += submodules[i].get_node_count();
+    clear_network();
+
+
+    //Add all the nodes we will need
+    this->add_nodes(max_net_size);
+
+    current_size = 0;
+    link_count = 0;
+    for (i=0; i < submodules.size(); i++) 
+    {
+        //Generate network links using the information from the neighbours
+        for (j=0; j < submodules[i].get_node_count(); j++)
+        {
+            for (k=0; k < submodules[i].out_degree(j); k++)
+            {
+                this->add_link(j + current_size, submodules[i].get_out(j,k) + current_size);
+            }
+        }
+
+        //Then copy all node values 
+        this->value = copy(submodules[i].value.begin(), submodules[i].value.end(), this->value.begin() + current_size);
+        this->prop_d = copy(submodules[i].prop_d.begin(), submodules[i].prop_d.end(), this->prop_d.begin() + current_size);
+        this->prop_i = copy(submodules[i].prop_i.begin(), submodules[i].prop_i.end(), this->prop_i.begin() + current_size);
+        this->prop_b = copy(submodules[i].prop_b.begin(), submodules[i].prop_b.end(), this->prop_b.begin() + current_size);
+        this->prop_s = copy(submodules[i].prop_s.begin(), submodules[i].prop_s.end(), this->prop_s.begin() + current_size);
+    }
 }
 
 
@@ -943,11 +988,14 @@ void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector
 *  \param nodes: nodes of the network
 *  \param mean_k: average degree
 *  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*  \param n0: optional, default 0. The first node of the subset to start creating the network.
+*  \param nf: optional, default -1. The last node of the subset to create the network. If negative it will take the entire graph.
 *
-* Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration.
+* Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration. 
+* It will generate a network for the subset of nodes [n0, nf] if they are specified
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
+void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed, unsigned int n0, unsigned int nf)
 {
     //TODO: make faster. MAKE SAFER
 
@@ -957,16 +1005,20 @@ void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned in
 
     double r;
 
+    //A negative value for nf (default) gives the entire network
+    //Any nf > 0 will be used to crerate a network for the subset of nodes [n0, nf]
+    nf = nf <= 0 ? max_net_size : nf;
+
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
-    uniform_int_distribution<int>  index(0,n-1); //-1 because closed interval for ints
+    uniform_int_distribution<int>  index(n0,nf-1); //-1 because closed interval for ints
 
-    add_nodes(n); //Create the nodes
+    add_nodes(nf - n0); //Create the nodes
 
     //For the n (n-1) / 2 pairs, link them with probability p
-    for (i=0; i < current_size; i++)
+    for (i=n0; i < nf; i++)
     {
-        for (j=i+1; j < current_size; j++)
+        for (j=i+1; j < nf; j++)
         {
             r = ran_u(gen);
             //With probability p, add link. With probability 1/2, select if the link goes out or in

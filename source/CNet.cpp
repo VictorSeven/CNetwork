@@ -62,7 +62,7 @@ class CNetwork: public DirectedCNetwork<T,B>
         int get_neigh_at(const int node_index, const int k) const;
 
         void create_2d_lattice(const int L, bool eight=false, bool periodic=true);
-        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789);
+        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=-1);
 
         CNetwork(int max_size);
 
@@ -615,23 +615,28 @@ void CNetwork<T,B>::create_2d_lattice(const int L, bool eight, bool periodic)
 * Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration.
 */
 template <class T, typename B>
-void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
+void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed, unsigned int n0, unsigned int nf)
 {
     //TODO: make faster. MAKE SAFER
 
     int i,j,k;
     double p = mean_k / (n - 1.0);
 
+
+    //A negative value for nf (default) gives the entire network
+    //Any nf > 0 will be used to crerate a network for the subset of nodes [n0, nf]
+    nf = nf <= 0 ? this->max_net_size : nf;
+
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
-    uniform_int_distribution<int>  index(0,n-1); //-1 because closed interval for ints
+    uniform_int_distribution<int>  index(n0,nf-1); //-1 because closed interval for ints
 
-    add_nodes(n); //Create the nodes
+    add_nodes(nf-n0); //Create the nodes
 
     //For the n (n-1) / 2 pairs, link them with probability p
-    for (i=0; i < this->current_size; i++)
+    for (i=n0; i < nf; i++)
     {
-        for (j=i+1; j < this->current_size; j++)
+        for (j=i+1; j < nf; j++)
         {
             //With probability p, add link. 
             if (ran_u(gen) <= p) add_link(i, j);
