@@ -62,7 +62,7 @@ class CNetwork: public DirectedCNetwork<T,B>
         int get_neigh_at(const int node_index, const int k) const;
 
         void create_2d_lattice(const int L, bool eight=false, bool periodic=true);
-        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=-1);
+        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=0);
 
         CNetwork(int max_size);
 
@@ -625,7 +625,7 @@ void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random
 
     //A negative value for nf (default) gives the entire network
     //Any nf > 0 will be used to crerate a network for the subset of nodes [n0, nf]
-    nf = nf <= 0 ? this->max_net_size : nf;
+    nf = nf == 0 ? this->max_net_size : nf;
 
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution

@@ -68,7 +68,7 @@ class DirectedCNetwork
         void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed = 123456789);
         void create_configurational(int nodes, int kmin, double gamma, unsigned int random_seed);
         void create_watts_strogatz(int nodes, int regular_connections, double p, unsigned int random_seed);
-        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=-1);
+        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=0);
 
 
 
@@ -1007,7 +1007,7 @@ void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned in
 
     //A negative value for nf (default) gives the entire network
     //Any nf > 0 will be used to crerate a network for the subset of nodes [n0, nf]
-    nf = nf <= 0 ? max_net_size : nf;
+    nf = nf == 0 ? max_net_size : nf;
 
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
