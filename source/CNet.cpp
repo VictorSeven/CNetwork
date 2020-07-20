@@ -66,7 +66,7 @@ class CNetwork: public DirectedCNetwork<T,B>
 
         CNetwork();
         CNetwork(int max_size);
-        CNetwork(const vector<CNetwork<T,B> > &submodules);
+        CNetwork(vector<CNetwork<T,B> > &submodules, const bool freemem=true);
 
         void clear_network();
 
@@ -121,7 +121,7 @@ CNetwork<T,B>::CNetwork(int max_size) : DirectedCNetwork<T,B>(max_size)
 * a graph with disconnected sub-graphs.
 */
 template <class T, typename B>
-CNetwork<T,B>::CNetwork(const vector<CNetwork<T,B> > &submodules) 
+CNetwork<T,B>::CNetwork(vector<CNetwork<T,B> > &submodules, const bool freemem) 
 {
     //Side node: implementation cannot be done just calling the parent method first
     //and then setting directed false, since we have to use the add_link function, which needs
@@ -150,17 +150,11 @@ CNetwork<T,B>::CNetwork(const vector<CNetwork<T,B> > &submodules)
                 this->add_link(j + size_added, submodules[i].get_out(j,k) + size_added);
             }
         }
-
-        //Then copy all node values 
-        this->value = copy(submodules[i].value.begin(), submodules[i].value.end(), this->value.begin() + size_added);
-
-        //And now insert all the new values in the maps
-        this->prop_d.insert(submodules[i].prop_d.begin(), submodules[i].prop_d.end());
-        this->prop_i.insert(submodules[i].prop_i.begin(), submodules[i].prop_i.end());
-        this->prop_b.insert(submodules[i].prop_b.begin(), submodules[i].prop_b.end());
-        this->prop_s.insert(submodules[i].prop_s.begin(), submodules[i].prop_s.end());
-        
         size_added += submodules[i].get_node_count();
+
+
+        //Free submodule memory to avoid high RAM allocations
+        if (freemem) submodules[i].clear_network();
     }
     return;
 }

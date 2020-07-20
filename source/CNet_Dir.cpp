@@ -121,7 +121,7 @@ class DirectedCNetwork
         vector<T> get_values() const;
         DirectedCNetwork();
         DirectedCNetwork(int max_size);
-        DirectedCNetwork(const vector<DirectedCNetwork> &submodules);
+        DirectedCNetwork(vector<DirectedCNetwork> &submodules, const bool freemem=true);
 
 
 
@@ -203,15 +203,17 @@ DirectedCNetwork<T,B>::DirectedCNetwork(int max_size)
 
 /** \brief DirectedCNetwork constructor via submodules
 *  \param submodules: a list of networks to build this network from
+*  \param are_props_4_nodes: whether is the custom properties have to be set for nodes (true) or links (false). Defaults to true. All submodules MUST have the properties assigned either to nodes OR links, never mixing.
 *
 * Creates a new DirectedCNetwork which contains all the previous submodules, generating
 * a graph with disconnected sub-graphs.
 */
 template <class T, typename B>
-DirectedCNetwork<T,B>::DirectedCNetwork(const vector<DirectedCNetwork<T,B> > &submodules)
+DirectedCNetwork<T,B>::DirectedCNetwork(vector<DirectedCNetwork<T,B> > &submodules, const bool freemem)
 {
     int i,j,k;
     int size_added;
+
     directed = true; 
 
     //Get size and clear network
@@ -234,17 +236,10 @@ DirectedCNetwork<T,B>::DirectedCNetwork(const vector<DirectedCNetwork<T,B> > &su
                 this->add_link(j + size_added, submodules[i].get_out(j,k) + size_added);
             }
         }
-
-        //Then copy all node values 
-        copy(submodules[i].value.begin(), submodules[i].value.end(), this->value.begin() + size_added);
-
-        //And now insert all the new values in the maps
-        this->prop_d.insert(submodules[i].prop_d.begin(), submodules[i].prop_d.end());
-        this->prop_i.insert(submodules[i].prop_i.begin(), submodules[i].prop_i.end());
-        this->prop_b.insert(submodules[i].prop_b.begin(), submodules[i].prop_b.end());
-        this->prop_s.insert(submodules[i].prop_s.begin(), submodules[i].prop_s.end());
-
         size_added += submodules[i].get_node_count();
+
+        //Free submodule memory to avoid high RAM allocations
+        if (freemem) submodules[i].clear_network();
     }
 }
 
@@ -531,9 +526,6 @@ void DirectedCNetwork<T,B>::remove_link(int index_link)
 
     adjm.erase(index_link); //Delete the link
     link_count -= 1;
-
-
-    //cout << from << "  " << to << endl;
 
     auto index_it = find(neighs[from].begin(), neighs[from].end(), to); //Relative index of TO in terms of FROM
     int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
