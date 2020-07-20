@@ -2,3 +2,7 @@
 *.a
 *.exe
 *.o
+*.out
+
+#Avoid the test file
+pruebared.cpp

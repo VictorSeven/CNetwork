@@ -119,6 +119,7 @@ class DirectedCNetwork
         T& operator[](const int& i);
         T operator[](const int& i) const;
         vector<T> get_values() const;
+        DirectedCNetwork();
         DirectedCNetwork(int max_size);
         DirectedCNetwork(const vector<DirectedCNetwork> &submodules);
 
@@ -170,6 +171,20 @@ using DWCNd = DirectedCNetwork<double, double>;
 // ========================================================================================================
 
 
+/** \brief DirectedCNetwork void constructor
+ * 
+* Creates a new DirectedCNetwork with a size zero.
+*/
+template <class T, typename B>
+DirectedCNetwork<T,B>::DirectedCNetwork()
+{
+    directed = true;
+    max_net_size = 0; //Set the max size of the network
+    clear_network(); //Initialize everything
+    return;
+}
+
+
 /** \brief DirectedCNetwork standard constructor
 *  \param max_size: maximum size of the network
 *
@@ -196,6 +211,7 @@ template <class T, typename B>
 DirectedCNetwork<T,B>::DirectedCNetwork(const vector<DirectedCNetwork<T,B> > &submodules)
 {
     int i,j,k;
+    int size_added;
     directed = true; 
 
     //Get size and clear network
@@ -207,8 +223,7 @@ DirectedCNetwork<T,B>::DirectedCNetwork(const vector<DirectedCNetwork<T,B> > &su
     //Add all the nodes we will need
     this->add_nodes(max_net_size);
 
-    current_size = 0;
-    link_count = 0;
+    size_added = 0;
     for (i=0; i < submodules.size(); i++) 
     {
         //Generate network links using the information from the neighbours
@@ -216,16 +231,20 @@ DirectedCNetwork<T,B>::DirectedCNetwork(const vector<DirectedCNetwork<T,B> > &su
         {
             for (k=0; k < submodules[i].out_degree(j); k++)
             {
-                this->add_link(j + current_size, submodules[i].get_out(j,k) + current_size);
+                this->add_link(j + size_added, submodules[i].get_out(j,k) + size_added);
             }
         }
 
         //Then copy all node values 
-        this->value = copy(submodules[i].value.begin(), submodules[i].value.end(), this->value.begin() + current_size);
-        this->prop_d = copy(submodules[i].prop_d.begin(), submodules[i].prop_d.end(), this->prop_d.begin() + current_size);
-        this->prop_i = copy(submodules[i].prop_i.begin(), submodules[i].prop_i.end(), this->prop_i.begin() + current_size);
-        this->prop_b = copy(submodules[i].prop_b.begin(), submodules[i].prop_b.end(), this->prop_b.begin() + current_size);
-        this->prop_s = copy(submodules[i].prop_s.begin(), submodules[i].prop_s.end(), this->prop_s.begin() + current_size);
+        copy(submodules[i].value.begin(), submodules[i].value.end(), this->value.begin() + size_added);
+
+        //And now insert all the new values in the maps
+        this->prop_d.insert(submodules[i].prop_d.begin(), submodules[i].prop_d.end());
+        this->prop_i.insert(submodules[i].prop_i.begin(), submodules[i].prop_i.end());
+        this->prop_b.insert(submodules[i].prop_b.begin(), submodules[i].prop_b.end());
+        this->prop_s.insert(submodules[i].prop_s.begin(), submodules[i].prop_s.end());
+
+        size_added += submodules[i].get_node_count();
     }
 }
 

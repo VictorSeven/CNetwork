@@ -64,7 +64,9 @@ class CNetwork: public DirectedCNetwork<T,B>
         void create_2d_lattice(const int L, bool eight=false, bool periodic=true);
         void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=0);
 
+        CNetwork();
         CNetwork(int max_size);
+        CNetwork(const vector<CNetwork<T,B> > &submodules);
 
         void clear_network();
 
@@ -85,6 +87,19 @@ using WCNd = CNetwork<double, double>;
 // ========================================================================================================
 // ========================================================================================================
 
+
+/** \brief CNetwork void constructor
+*
+* Creates a new CNetwork with no size.
+*/
+template <class T, typename B>
+CNetwork<T,B>::CNetwork() : DirectedCNetwork<T,B>()
+{
+    this->directed = false;
+    return;
+}
+
+
 /** \brief CNetwork standard constructor
 *  \param max_size: maximum size of the network
 *
@@ -97,6 +112,60 @@ CNetwork<T,B>::CNetwork(int max_size) : DirectedCNetwork<T,B>(max_size)
     this->directed = false;
     return;
 }
+
+
+/** \brief DirectedCNetwork constructor via submodules
+*  \param submodules: a list of networks to build this network from
+*
+* Creates a new DirectedCNetwork which contains all the previous submodules, generating
+* a graph with disconnected sub-graphs.
+*/
+template <class T, typename B>
+CNetwork<T,B>::CNetwork(const vector<CNetwork<T,B> > &submodules) 
+{
+    //Side node: implementation cannot be done just calling the parent method first
+    //and then setting directed false, since we have to use the add_link function, which needs
+    //to have directed false from the beginning.
+
+    int i,j,k;
+    int size_added;
+    this->directed = false; 
+
+    //Get size and clear network
+    this->max_net_size = 0;
+    for (i=0; i < submodules.size(); i++) this->max_net_size += submodules[i].get_node_count();
+    this->clear_network();
+
+    //Add all the nodes we will need
+    this->add_nodes(this->max_net_size);
+
+    size_added = 0;
+    for (i=0; i < submodules.size(); i++) 
+    {
+        //Generate network links using the information from the neighbours
+        for (j=0; j < submodules[i].get_node_count(); j++)
+        {
+            for (k=0; k < submodules[i].out_degree(j); k++)
+            {
+                this->add_link(j + size_added, submodules[i].get_out(j,k) + size_added);
+            }
+        }
+
+        //Then copy all node values 
+        this->value = copy(submodules[i].value.begin(), submodules[i].value.end(), this->value.begin() + size_added);
+
+        //And now insert all the new values in the maps
+        this->prop_d.insert(submodules[i].prop_d.begin(), submodules[i].prop_d.end());
+        this->prop_i.insert(submodules[i].prop_i.begin(), submodules[i].prop_i.end());
+        this->prop_b.insert(submodules[i].prop_b.begin(), submodules[i].prop_b.end());
+        this->prop_s.insert(submodules[i].prop_s.begin(), submodules[i].prop_s.end());
+        
+        size_added += submodules[i].get_node_count();
+    }
+    return;
+}
+
+
 
 /** \brief Delete all the data stored by the network
 *  \param max_size: maximum size of the network
