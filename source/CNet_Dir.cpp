@@ -110,7 +110,7 @@ class DirectedCNetwork
 
 
 
-        void write_graphml(string filename, vector<string> labels = vector<string>()) const;
+        void write_graphml(string filename, const vector<string> &labels = vector<string>());
         void write_mtx(string filename) const;
         void read_mtx(string filename) const;
 
@@ -555,13 +555,13 @@ void DirectedCNetwork<T,B>::remove_link(int index_link)
 * Computes the mean degree of the network
 */
 template <class T, typename B>
-double DirectedCNetwork<T,B>::mean_degree(int type) const
+double DirectedCNetwork<T,B>::mean_degree(const int type) const
 {
     int i;
     double sum = 0.0; //Get the sum,
 
     //Declare pointer to a function. *f is a function, so f points to memory location
-    int (DirectedCNetwork<T,B>::*deg_fun)(int) const;
+    int (DirectedCNetwork<T,B>::*deg_fun)(const int) const = NULL;
 
     //Gets the correct function for computing degrees
     if (type == 0) deg_fun = &DirectedCNetwork<T,B>::in_degree; //Asign the pointer to a memory reference
@@ -573,6 +573,7 @@ double DirectedCNetwork<T,B>::mean_degree(int type) const
     {
         sum += (this->*deg_fun)(i); //Derefence this and call the function
     }
+
     //Divide by current size
     return sum / (current_size * 1.0);
 }
@@ -1597,7 +1598,7 @@ string DirectedCNetwork<T,B>::get_value_s(string name, int index)
 * recognized as a node identifier in software like Gephi. For compatibility, MTX format is preferred
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::write_graphml(string filename, vector<string> labels) const
+void DirectedCNetwork<T,B>::write_graphml(string filename, const vector<string> &labels)
 {
     int i,j,k;
     ofstream output;

@@ -428,7 +428,11 @@ void CNetwork<T,B>::remove_link(int index_link)
 template <class T, typename B>
 double CNetwork<T,B>::mean_degree() const
 {
-    return DirectedCNetwork<T,B>::mean_degree(this->TOTAL_DEGREE);
+    int i;
+    double sum = 0.0;
+    for (i=0; i < this->current_size; i++) sum += degree(i);
+
+    return sum / (1.0 * this->current_size);
 }
 
 
