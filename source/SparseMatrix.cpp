@@ -113,6 +113,16 @@ public:
     */
     data<T> &operator [](const int &index);
 
+
+    /** \brief Bracket operator
+    * \param index: index in the list of elements to access
+    * \return reference to the element index in the list
+    *
+    * Access to element index in the list.
+    */
+    data<T> operator [](const int &index) const;
+
+
     /** \brief Power of a matrix
     * \param n: exponent
     * \return matrix powered to the exponent n
@@ -466,6 +476,14 @@ data<T> &SparseMatrix<T>::operator [](const int &index)
 {
     return m[index];
 }
+
+
+template<typename T>
+data<T> SparseMatrix<T>::operator [](const int &index) const
+{
+    return m[index];
+}
+
 
 template<typename T>
 SparseMatrix<double> SparseMatrix<T>::pow(const int n)

@@ -110,7 +110,7 @@ class DirectedCNetwork
 
 
 
-        void write_graphml(string filename, const vector<string> &labels = vector<string>());
+        void write_graphml(string filename, const vector<string> &labels = vector<string>()) const;
         void write_mtx(string filename) const;
         void read_mtx(string filename) const;
 
@@ -1598,7 +1598,7 @@ string DirectedCNetwork<T,B>::get_value_s(string name, int index)
 * recognized as a node identifier in software like Gephi. For compatibility, MTX format is preferred
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::write_graphml(string filename, const vector<string> &labels)
+void DirectedCNetwork<T,B>::write_graphml(string filename, const vector<string> &labels) const
 {
     int i,j,k;
     ofstream output;
