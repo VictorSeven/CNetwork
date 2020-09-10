@@ -68,13 +68,13 @@ class DirectedCNetwork
         void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed = 123456789);
         void create_configurational(int nodes, int kmin, double gamma, unsigned int random_seed);
         void create_watts_strogatz(int nodes, int regular_connections, double p, unsigned int random_seed);
-        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789);
+        void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=0);
 
 
 
-        int in_degree(int node_index) const;
-        int out_degree(int node_index) const;
-        int degree(int node_index) const;
+        int in_degree(const int node_index) const;
+        int out_degree(const int node_index) const;
+        int degree(const int node_index) const;
 
 
 
@@ -90,10 +90,10 @@ class DirectedCNetwork
 
 
 
-        vector<unsigned int> get_neighs_out(int node_index) const;
-        vector<unsigned int> get_neighs_in(int node_index) const;
-        int get_out(int node_index, int k) const;
-        int get_in(int node_index, int k) const;
+        vector<unsigned int> get_neighs_out(const int node_index) const;
+        vector<unsigned int> get_neighs_in(const int node_index) const;
+        int get_out(const int node_index, const int k) const;
+        int get_in(const int node_index, const int k) const;
 
 
 
@@ -110,14 +110,18 @@ class DirectedCNetwork
 
 
 
-        void write_graphml(string filename, vector<string> labels = vector<string>()) const;
+        void write_graphml(string filename, const vector<string> &labels = vector<string>());
         void write_mtx(string filename) const;
         void read_mtx(string filename) const;
 
 
 
         T& operator[](const int& i);
+        T operator[](const int& i) const;
+        vector<T> get_values() const;
+        DirectedCNetwork();
         DirectedCNetwork(int max_size);
+        DirectedCNetwork(vector<DirectedCNetwork> &submodules, const bool freemem=true);
 
 
 
@@ -167,6 +171,20 @@ using DWCNd = DirectedCNetwork<double, double>;
 // ========================================================================================================
 
 
+/** \brief DirectedCNetwork void constructor
+ * 
+* Creates a new DirectedCNetwork with a size zero.
+*/
+template <class T, typename B>
+DirectedCNetwork<T,B>::DirectedCNetwork()
+{
+    directed = true;
+    max_net_size = 0; //Set the max size of the network
+    clear_network(); //Initialize everything
+    return;
+}
+
+
 /** \brief DirectedCNetwork standard constructor
 *  \param max_size: maximum size of the network
 *
@@ -180,6 +198,49 @@ DirectedCNetwork<T,B>::DirectedCNetwork(int max_size)
     max_net_size = max_size; //Set the max size of the network
     clear_network(); //Initialize everything
     return;
+}
+
+
+/** \brief DirectedCNetwork constructor via submodules
+*  \param submodules: a list of networks to build this network from
+*  \param are_props_4_nodes: whether is the custom properties have to be set for nodes (true) or links (false). Defaults to true. All submodules MUST have the properties assigned either to nodes OR links, never mixing.
+*
+* Creates a new DirectedCNetwork which contains all the previous submodules, generating
+* a graph with disconnected sub-graphs.
+*/
+template <class T, typename B>
+DirectedCNetwork<T,B>::DirectedCNetwork(vector<DirectedCNetwork<T,B> > &submodules, const bool freemem)
+{
+    int i,j,k;
+    int size_added;
+
+    directed = true; 
+
+    //Get size and clear network
+    max_net_size = 0;
+    for (i=0; i < submodules.size(); i++) max_net_size += submodules[i].get_node_count();
+    clear_network();
+
+
+    //Add all the nodes we will need
+    this->add_nodes(max_net_size);
+
+    size_added = 0;
+    for (i=0; i < submodules.size(); i++) 
+    {
+        //Generate network links using the information from the neighbours
+        for (j=0; j < submodules[i].get_node_count(); j++)
+        {
+            for (k=0; k < submodules[i].out_degree(j); k++)
+            {
+                this->add_link(j + size_added, submodules[i].get_out(j,k) + size_added);
+            }
+        }
+        size_added += submodules[i].get_node_count();
+
+        //Free submodule memory to avoid high RAM allocations
+        if (freemem) submodules[i].clear_network();
+    }
 }
 
 
@@ -221,6 +282,30 @@ template <class T, typename B>
 T& DirectedCNetwork<T,B>::operator[](const int& i)
 {
     return value[i];
+}
+
+/** \brief Bracket operator
+*  \param i: index
+*  \return reference to the value stored in i-th node
+*
+* Access the value stored in the i-th node.
+*/
+template <class T, typename B>
+T DirectedCNetwork<T,B>::operator[](const int& i) const
+{
+    return value[i];
+}
+
+
+/** \brief Get the values stored in nodes
+*  \return Copy of the values stored, as a vector
+*
+* Get the values stored in nodes as a vector
+*/
+template <class T, typename B>
+vector<T> DirectedCNetwork<T,B>::get_values() const
+{
+    return value;
 }
 
 // ========================================================================================================
@@ -442,9 +527,6 @@ void DirectedCNetwork<T,B>::remove_link(int index_link)
     adjm.erase(index_link); //Delete the link
     link_count -= 1;
 
-
-    //cout << from << "  " << to << endl;
-
     auto index_it = find(neighs[from].begin(), neighs[from].end(), to); //Relative index of TO in terms of FROM
     int index_neigh = distance(neighs[from].begin(), index_it); //Get the relative index as an int
 
@@ -473,13 +555,13 @@ void DirectedCNetwork<T,B>::remove_link(int index_link)
 * Computes the mean degree of the network
 */
 template <class T, typename B>
-double DirectedCNetwork<T,B>::mean_degree(int type) const
+double DirectedCNetwork<T,B>::mean_degree(const int type) const
 {
     int i;
     double sum = 0.0; //Get the sum,
 
     //Declare pointer to a function. *f is a function, so f points to memory location
-    int (DirectedCNetwork<T,B>::*deg_fun)(int) const;
+    int (DirectedCNetwork<T,B>::*deg_fun)(const int) const = NULL;
 
     //Gets the correct function for computing degrees
     if (type == 0) deg_fun = &DirectedCNetwork<T,B>::in_degree; //Asign the pointer to a memory reference
@@ -491,6 +573,7 @@ double DirectedCNetwork<T,B>::mean_degree(int type) const
     {
         sum += (this->*deg_fun)(i); //Derefence this and call the function
     }
+
     //Divide by current size
     return sum / (current_size * 1.0);
 }
@@ -806,7 +889,7 @@ void DirectedCNetwork<T,B>::degree_distribution(vector<int> &distribution, int t
     {
         for (i=0; i < distribution.size(); i++)
         {
-            distribution[i] /= link_count;
+            distribution[i] /= 1.0*link_count;
         }
     }
     return;
@@ -917,11 +1000,14 @@ void DirectedCNetwork<T,B>::degree_correlation(vector<int> &distribution, vector
 *  \param nodes: nodes of the network
 *  \param mean_k: average degree
 *  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*  \param n0: optional, default 0. The first node of the subset to start creating the network.
+*  \param nf: optional, default -1. The last node of the subset to create the network. If negative it will take the entire graph.
 *
-* Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration.
+* Generates an Erdos-Renyi network. The random seed should be specified for obtaining different networks each iteration. 
+* It will generate a network for the subset of nodes [n0, nf] if they are specified
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed)
+void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random_seed, unsigned int n0, unsigned int nf)
 {
     //TODO: make faster. MAKE SAFER
 
@@ -931,16 +1017,20 @@ void DirectedCNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned in
 
     double r;
 
+    //A negative value for nf (default) gives the entire network
+    //Any nf > 0 will be used to crerate a network for the subset of nodes [n0, nf]
+    nf = nf == 0 ? max_net_size : nf;
+
     mt19937 gen(random_seed);; //Create the generator
     uniform_real_distribution<double> ran_u(0.0,1.0); //Uniform number distribution
-    uniform_int_distribution<int>  index(0,n-1); //-1 because closed interval for ints
+    uniform_int_distribution<int>  index(n0,nf-1); //-1 because closed interval for ints
 
-    add_nodes(n); //Create the nodes
+    add_nodes(nf - n0); //Create the nodes
 
     //For the n (n-1) / 2 pairs, link them with probability p
-    for (i=0; i < current_size; i++)
+    for (i=n0; i < nf; i++)
     {
-        for (j=i+1; j < current_size; j++)
+        for (j=i+1; j < nf; j++)
         {
             r = ran_u(gen);
             //With probability p, add link. With probability 1/2, select if the link goes out or in
@@ -1177,7 +1267,7 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
 * Returns the in-degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::in_degree(int node_index) const
+int DirectedCNetwork<T,B>::in_degree(const int node_index) const
 {
     return pointing_in[node_index].size();
 }
@@ -1189,7 +1279,7 @@ int DirectedCNetwork<T,B>::in_degree(int node_index) const
 * Returns the out-degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::out_degree(int node_index) const
+int DirectedCNetwork<T,B>::out_degree(const int node_index) const
 {
     return neighs[node_index].size();
 }
@@ -1202,7 +1292,7 @@ int DirectedCNetwork<T,B>::out_degree(int node_index) const
 * Returns the degree of the target node
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::degree(int node_index) const
+int DirectedCNetwork<T,B>::degree(const int node_index) const
 {
     return pointing_in[node_index].size() + neighs[node_index].size();
 }
@@ -1304,7 +1394,7 @@ int DirectedCNetwork<T,B>::get_link_count() const
 * Returns the a vector with the indices of the neighbours pointed by the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index) const
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(const int node_index) const
 {
     return neighs[node_index];
 }
@@ -1317,7 +1407,7 @@ vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_out(int node_index) const
 * Returns the a vector with the indices of the nodes that point to the specified node.
 */
 template <class T, typename B>
-vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index) const
+vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(const int node_index) const
 {
     return pointing_in[node_index];
 }
@@ -1331,7 +1421,7 @@ vector<unsigned int> DirectedCNetwork<T,B>::get_neighs_in(int node_index) const
 * Returns the index of the k-th neighbour of the target node. Neighbours are unsorted
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_out(int node_index, int k) const
+int DirectedCNetwork<T,B>::get_out(const int node_index, const int k) const
 {
     return neighs[node_index][k];
 }
@@ -1345,7 +1435,7 @@ int DirectedCNetwork<T,B>::get_out(int node_index, int k) const
 * Returns the index of the k-th node pointing to the target node.
 */
 template <class T, typename B>
-int DirectedCNetwork<T,B>::get_in(int node_index, int k) const
+int DirectedCNetwork<T,B>::get_in(const int node_index, const int k) const
 {
     return pointing_in[node_index][k];
 }
@@ -1508,7 +1598,7 @@ string DirectedCNetwork<T,B>::get_value_s(string name, int index)
 * recognized as a node identifier in software like Gephi. For compatibility, MTX format is preferred
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::write_graphml(string filename, vector<string> labels) const
+void DirectedCNetwork<T,B>::write_graphml(string filename, const vector<string> &labels)
 {
     int i,j,k;
     ofstream output;

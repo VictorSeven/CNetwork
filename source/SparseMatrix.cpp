@@ -200,6 +200,8 @@ SparseMatrix<T> &SparseMatrix<T>::operator=(const SparseMatrix<T> &other)
     m_dim = other.m_dim;
     is_symmetric = other.is_symmetric;
     m = other.m;
+
+    return *this;
 }
 
 
