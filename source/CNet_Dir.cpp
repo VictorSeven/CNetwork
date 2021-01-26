@@ -112,7 +112,7 @@ class DirectedCNetwork
 
         void write_graphml(string filename, const vector<string> &labels = vector<string>()) const;
         void write_mtx(string filename) const;
-        void read_mtx(string filename) const;
+        bool read_mtx(string filename);
 
 
 
@@ -1853,10 +1853,13 @@ void DirectedCNetwork<T,B>::write_mtx(string filename) const
 * This function reads any MTX-like format
 */
 template <class T, typename B>
-void DirectedCNetwork<T,B>::read_mtx(string filename) const
+bool DirectedCNetwork<T,B>::read_mtx(string filename)
 {
     //Destroy this object and create new network
-    clear_network(max_net_size);
+    clear_network();
+
+    //To see if file was correctly opened
+    bool file_opened_ok;
 
     bool read_header = false; //To see if we have read the dim1xdim2 links line
     string line; //Store a line
@@ -1864,9 +1867,13 @@ void DirectedCNetwork<T,B>::read_mtx(string filename) const
     int from, to, w; //Auxiliary
 
     //Open the file and checks avaiable
-    input.open(filename);
-    if (input.is_open())
+    input.open(filename + ".mtx");
+
+    file_opened_ok = input.is_open();
+
+    if (file_opened_ok)
     {
+        cout << "yay" << endl;
         while(getline(input, line)) //File we have not finished,
         {
             if (line[0] != '%') //If first char is not a comment
@@ -1898,7 +1905,10 @@ void DirectedCNetwork<T,B>::read_mtx(string filename) const
 
         }
     }
+    else cout << "[CNetwork Error]: The requested MTX file " << filename << ", could not be opened." << endl;
     input.close();
+
+    return file_opened_ok;
 }
 
 
