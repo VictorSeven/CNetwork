@@ -64,6 +64,8 @@ class CNetwork: public DirectedCNetwork<T,B>
         void create_2d_lattice(const int L, bool eight=false, bool periodic=true);
         void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=0);
 
+        bool read_mtx(string filename);
+
         CNetwork();
         CNetwork(int max_size);
         CNetwork(vector<CNetwork<T,B> > &submodules, const bool freemem=true);
@@ -714,7 +716,69 @@ void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random
 
 }
 
+/** \brief Read network data from plain MTX format
+*  \param filename: name of the file (including extension)
+*
+* The MTX format is defined by a simple plaintext representation of the adjancency matrix.
+* This function reads any MTX-like format
+*/
+template <class T, typename B>
+bool CNetwork<T,B>::read_mtx(string filename)
+{
+    //Destroy this object and create new network
+    clear_network();
 
+    //To see if file was correctly opened
+    bool file_opened_ok;
+
+    bool read_header = false; //To see if we have read the dim1xdim2 links line
+    string line; //Store a line
+    ifstream input; //File
+    int from, to, w; //Auxiliary
+
+    //Open the file and checks avaiable
+    input.open(filename + ".mtx");
+
+    file_opened_ok = input.is_open();
+
+    if (file_opened_ok)
+    {
+        while(getline(input, line)) //File we have not finished,
+        {
+            if (line[0] != '%') //If first char is not a comment
+            {
+                istringstream iss(line); //Transform into stream
+                if (read_header) //Have we read the header?
+                {
+                    //Then check if network is weighted
+                    if (typeid(B) == typeid(bool))
+                    {
+                        iss >> from >> to; //Fill vars with data from stream
+                        add_link(from, to);
+                    }
+                    else
+                    {
+                        iss >> from >> to >> w; //Fill vars with data from stream
+                        add_link(from, to, w);
+                    }
+
+                }
+                else
+                {
+                    read_header = true; //Then mark header as read
+                    iss >> from >> from >> to; //Matrix NxN so first two numbers are the same. "From" is N and "To" is the number of links
+                    add_nodes(from); //Add N nodes to the network
+                }
+
+            }
+
+        }
+    }
+    else cout << "[CNetwork Error]: The requested MTX file " << filename << ", could not be opened." << endl;
+    input.close();
+
+    return file_opened_ok;
+}
 
 
 // ========================================================================================================

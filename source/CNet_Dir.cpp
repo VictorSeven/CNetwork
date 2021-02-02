@@ -1856,7 +1856,7 @@ template <class T, typename B>
 bool DirectedCNetwork<T,B>::read_mtx(string filename)
 {
     //Destroy this object and create new network
-    clear_network();
+    this->clear_network();
 
     //To see if file was correctly opened
     bool file_opened_ok;
@@ -1873,7 +1873,6 @@ bool DirectedCNetwork<T,B>::read_mtx(string filename)
 
     if (file_opened_ok)
     {
-        cout << "yay" << endl;
         while(getline(input, line)) //File we have not finished,
         {
             if (line[0] != '%') //If first char is not a comment
@@ -1885,12 +1884,12 @@ bool DirectedCNetwork<T,B>::read_mtx(string filename)
                     if (typeid(B) == typeid(bool))
                     {
                         iss >> from >> to; //Fill vars with data from stream
-                        add_link(from, to);
+                        this->add_link(from, to);
                     }
                     else
                     {
                         iss >> from >> to >> w; //Fill vars with data from stream
-                        add_link(from, to, w);
+                        this->add_link(from, to, w);
                     }
 
                 }
@@ -1898,7 +1897,7 @@ bool DirectedCNetwork<T,B>::read_mtx(string filename)
                 {
                     read_header = true; //Then mark header as read
                     iss >> from >> from >> to; //Matrix NxN so first two numbers are the same. "From" is N and "To" is the number of links
-                    add_nodes(from); //Add N nodes to the network
+                    this->add_nodes(from); //Add N nodes to the network
                 }
 
             }
