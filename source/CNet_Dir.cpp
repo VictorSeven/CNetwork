@@ -432,12 +432,12 @@ bool DirectedCNetwork<T,B>::remove_node(int index)
 template <class T, typename B>
 void DirectedCNetwork<T,B>::add_link(int from, int to)
 {
-    adjm.push_back(data<B>(from, to, true)); //Assume this method is for bools
+    this->adjm.push_back(data<B>(from, to, true)); //Assume this method is for bools
 
-    neighs[from].push_back(to); //Add the node to the neighbours
-    pointing_in[to].push_back(from); //"to" node is being pointed by "from"
+    this->neighs[from].push_back(to); //Add the node to the neighbours
+    this->pointing_in[to].push_back(from); //"to" node is being pointed by "from"
 
-    link_count += 1; //Create one link more
+    this->link_count += 1; //Create one link more
     return;
 }
 
@@ -452,12 +452,12 @@ void DirectedCNetwork<T,B>::add_link(int from, int to)
 template <class T, typename B>
 void DirectedCNetwork<T,B>::add_link(int from, int to, B w)
 {
-    adjm.push_back(data<B>(from, to, w)); //Assume this method is for weighted things
+    this->adjm.push_back(data<B>(from, to, w)); //Assume this method is for weighted things
 
-    neighs[from].push_back(to); //Add the node to the neighbours
-    pointing_in[to].push_back(from); //"to" node is being pointed by "from"
+    this->neighs[from].push_back(to); //Add the node to the neighbours
+    this->pointing_in[to].push_back(from); //"to" node is being pointed by "from"
 
-    link_count += 1; //Create one link more
+    this->link_count += 1; //Create one link more
 
     return;
 }
@@ -1196,19 +1196,19 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
     bool found;
 
     //Create fully connected network with m0 nodes
-    add_nodes(m0);
+    this->add_nodes(m0);
     for (i=0; i < m0; i++)
     {
         for (j=i+1; j < m0; j++)
         {
-            add_link(i,j);
+            this->add_link(i,j);
         }
     }
 
     //Add then more nodes...
     for (i = m0; i < n; i++)
     {
-        add_nodes(1);
+        this->add_nodes(1);
 
         yet_linked = vector<int>(m-1, -1);
         k = 0;
@@ -1219,14 +1219,14 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
             if (random(gen) <= 0.5)
             {
                 //With half probability, add it to highly connected node, selecting randomly an edge.
-                index = uniform_int_distribution<int>(0, link_count-1);//-1 because interval is closed
-                index_add = adjm[index(gen)].y;
+                index = uniform_int_distribution<int>(0, this->link_count-1);//-1 because interval is closed
+                index_add = this->adjm[index(gen)].y;
 
             }
             else
             {
                 //If not, connect to a random node
-                index = uniform_int_distribution<int>(0, current_size-2); //We don't want current_size-1 which is the actual node, so up to -2
+                index = uniform_int_distribution<int>(0, this->current_size-2); //We don't want current_size-1 which is the actual node, so up to -2
                 index_add = index(gen);
             }
 
@@ -1241,7 +1241,7 @@ void DirectedCNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigne
             //If there is no previous link between both, then add it.
             if (!found)
             {
-                add_link(current_size-1, index_add); //Add the link
+                this->add_link(this->current_size-1, index_add); //Add the link
                 yet_linked[k] = index_add; //Say we explored it
                 k++; //To fill next vector element
             }

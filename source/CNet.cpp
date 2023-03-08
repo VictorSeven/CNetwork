@@ -63,6 +63,7 @@ class CNetwork: public DirectedCNetwork<T,B>
 
         void create_2d_lattice(const int L, bool eight=false, bool periodic=true);
         void create_erdos_renyi(int nodes, double mean_k, unsigned int random_seed=123456789, unsigned int n0=0, unsigned int nf=0);
+        void create_albert_barabasi(int n, int m0, int m, unsigned int random_seed = 123456789);
 
         bool read_mtx(string filename);
 
@@ -398,8 +399,6 @@ void CNetwork<T,B>::remove_link(int index_link)
     this->link_count -= 1;
 
 
-    //cout << from << "  " << to << endl;
-
     auto index_it = find(this->neighs[from].begin(), this->neighs[from].end(), to); //Relative index of TO in terms of FROM
     int index_neigh = distance(this->neighs[from].begin(), index_it); //Get the relative index as an int
 
@@ -509,7 +508,30 @@ double CNetwork<T,B>::mean_clustering_coef() const
 template <class T, typename B>
 void CNetwork<T,B>::degree_distribution(vector<int> &distribution, bool normalized) const
 {
-    DirectedCNetwork<T,B>::degree_distribution(distribution, this->TOTAL_DEGREE, normalized);
+    int i;
+    distribution = vector<int>(this->current_size, 0);
+
+    //Select in, out, or full degree distribution and compute it:
+    for (i=0; i < this->current_size; i++) distribution[degree(i)] += 1;
+
+    //Erase the 0s at the end of the array.
+    i = this->current_size - 1; //Start counter
+    while (distribution[i] == 0)
+    {
+        //distribution.erase(distribution.begin() + i);
+        distribution.pop_back();
+        i -= 1;
+    }
+
+    //Normalize the distribution if it has been indicated
+    if (normalized)
+    {
+        for (i=0; i < distribution.size(); i++)
+        {
+            distribution[i] /= 1.0*this->link_count;
+        }
+    }
+
     return;
 }
 
@@ -708,12 +730,93 @@ void CNetwork<T,B>::create_erdos_renyi(int n, double mean_k, unsigned int random
         for (j=i+1; j < nf; j++)
         {
             //With probability p, add link. 
-            if (ran_u(gen) <= p) add_link(i, j);
+            if (ran_u(gen) <= p) this->add_link(i, j);
         }
     }
 
     return;
 
+}
+
+/** \brief Generates an Albert-Barabasi network
+*  \param n: nodes of the network
+*  \param m0: initial number of fully-connected nodes
+*  \param m: new links added for each node
+*  \param random_seed: optional, default 123456789. Same seed gives the same network.
+*
+* Generates an Albert-Barabasi network based in the algorithm given by Newman. The random seed should be
+* specified for obtaining different networks each iteration.
+*/
+template <class T, typename B>
+void CNetwork<T,B>::create_albert_barabasi(int n, int m0, int m, unsigned int random_seed)
+{
+    int i,j,k,l;
+    double r;
+
+    mt19937 gen(random_seed);; //Create the generator
+    uniform_real_distribution<double> random(0.0,1.0); //Uniform number distribution
+    uniform_int_distribution<int>  index(0,1); //Useful to select indices
+
+    int index_add;
+    vector<int> yet_linked(m-1, -1); //Stores with which nodes I have visited. I only need to remember m-1 -I don't have to store the last
+    bool found;
+
+    //Create fully connected network with m0 nodes
+    this->add_nodes(n);
+    for (i=0; i < m0; i++)
+    {
+        for (j=i+1; j < m0; j++)
+        {
+            this->add_link(i,j);
+        }
+    }
+
+    int nodes_in_net = m0;
+
+    //Add then more nodes...
+    for (i = m0; i < n; i++)
+    {
+        nodes_in_net++;
+
+        yet_linked = vector<int>(m, -1);
+        k = 0;
+        //For every link we want to do,
+        for (j=0; j < m; j++)
+        {
+            //Generate a random number
+            if (random(gen) <= 0.5)
+            {
+                //With half probability, add it to highly connected node, selecting randomly an edge.
+                index = uniform_int_distribution<int>(0, this->link_count-1);//-1 because interval is closed
+                index_add = this->adjm[index(gen)].y;
+            }
+            else
+            {
+                //If not, connect to a random node
+                index = uniform_int_distribution<int>(0, nodes_in_net-2); //We don't want current_size-1 which is the actual node, so up to -2
+                index_add = index(gen);
+            }
+
+            //Check there that we don't have still a link between the two...
+            found = false;
+            l = 0;
+            while (l < m && !found && yet_linked[l] != -1) 
+            {
+                found = index_add == yet_linked[l];
+                l++;
+            }
+            //If there is no previous link between both, then add it.
+            if (!found)
+            {
+                this->add_link(nodes_in_net-1, index_add); //Add the link
+                yet_linked[k] = index_add; //Say we explored it
+                k++; //To fill next vector element
+            }
+
+        }
+    }
+
+    return;
 }
 
 /** \brief Read network data from plain MTX format
